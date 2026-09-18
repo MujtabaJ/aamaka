@@ -61,18 +61,22 @@ const defaults: SiteSettings = {
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-  const rows = await prisma.siteSetting.findMany();
-  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return {
-    ...defaults,
-    ...parseJson<Partial<SiteSettings>>(map.site ?? "{}", {}),
-    analytics: {
-      ...defaults.analytics,
-      gaMeasurementId:
-        process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || defaults.analytics.gaMeasurementId,
-      metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID || defaults.analytics.metaPixelId,
-    },
-  };
+  try {
+    const rows = await prisma.siteSetting.findMany();
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return {
+      ...defaults,
+      ...parseJson<Partial<SiteSettings>>(map.site ?? "{}", {}),
+      analytics: {
+        ...defaults.analytics,
+        gaMeasurementId:
+          process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || defaults.analytics.gaMeasurementId,
+        metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID || defaults.analytics.metaPixelId,
+      },
+    };
+  } catch {
+    return defaults;
+  }
 }
 
 export async function saveSettings(next: SiteSettings) {

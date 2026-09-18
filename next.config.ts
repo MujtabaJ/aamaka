@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["bcryptjs", "@prisma/client"],
   outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingIncludes: {
+    "*": ["./prisma/seeded.db"],
+  },
   async headers() {
     return [
       {

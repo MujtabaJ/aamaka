@@ -9,6 +9,8 @@ import "./globals.css";
 import { Cormorant_Garamond, Outfit, Noto_Nastaliq_Urdu } from "next/font/google";
 import type { Viewport } from "next";
 
+export const dynamic = "force-dynamic";
+
 const display = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["500", "600", "700"],

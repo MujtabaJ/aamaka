@@ -1,7 +1,9 @@
 {
   "name": "aamaka-production",
   "version": "1.0.0",
-  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "description": "AA Maka Production — premium Sindhi music, culture and commerce platform",
   "scripts": {
     "dev": "next dev --turbopack",
