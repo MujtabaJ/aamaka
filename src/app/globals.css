@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f7f1e6;
+  --fg: #1a1210;
+  --muted: #6b4e3d;
+  --line: rgba(26, 18, 16, 0.1);
+  --ajrak: #8b1e3f;
+  --gold: #c4a35a;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-feature-settings: "ss01" on, "kern" on;
+}
+
+.font-sindhi,
+[dir="rtl"] .rtl-copy {
+  font-family: var(--font-sindhi), serif;
+  line-height: 1.9;
+}
+
+.ajrak-motif {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath fill='%238B1E3F' fill-opacity='0.07' d='M40 0l8 16 16 8-16 8-8 16-8-16-16-8 16-8zM0 40l8 16 16 8-16 8-8 16-8-16L-24 64l16-8z'/%3E%3C/svg%3E");
+}
+
+.ajrak-frame {
+  background:
+    linear-gradient(#1a1210, #1a1210) padding-box,
+    repeating-linear-gradient(
+      45deg,
+      #8b1e3f,
+      #8b1e3f 6px,
+      #c4a35a 6px,
+      #c4a35a 8px,
+      #1a1210 8px,
+      #1a1210 14px
+    )
+      border-box;
+  border: 1px solid transparent;
+}
+
+.cinema-scrim {
+  background:
+    linear-gradient(180deg, rgba(18, 8, 10, 0.18) 0%, rgba(18, 8, 10, 0.72) 55%, #12080b 100%),
+    radial-gradient(circle at 20% 20%, rgba(196, 163, 90, 0.18), transparent 36%);
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c4a35a, transparent);
+}
+
+.player-progress::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #c4a35a;
+}
+
+.prose-aamaka {
+  --tw-prose-body: #3a2a24;
+  --tw-prose-headings: #1a1210;
+  --tw-prose-links: #8b1e3f;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

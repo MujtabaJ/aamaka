@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <rect width="800" height="800" fill="#1A1210"/>
+  <g fill="#6F1732" opacity="0.35">
+    <path d="M400 40l50 100 100 50-100 50-50 100-50-100-100-50 100-50z"/>
+    <path d="M160 260l30 60 60 30-60 30-30 60-30-60-60-30 60-30z"/>
+    <path d="M620 520l30 60 60 30-60 30-30 60-30-60-60-30 60-30z"/>
+  </g>
+  <circle cx="400" cy="390" r="170" fill="none" stroke="#C4A35A" stroke-width="3"/>
+  <text x="400" y="380" text-anchor="middle" fill="#C4A35A" font-size="18" font-family="Georgia" letter-spacing="6">AA MAKA</text>
+  <text x="400" y="430" text-anchor="middle" fill="#F7F1E6" font-size="28" font-family="Georgia">Sodhal Faqeer Laghari</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <radialGradient id="glow" cx="30%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#4A1A24"/>
+      <stop offset="1" stop-color="#12080B"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+  <g fill="#8B1E3F" opacity="0.28">
+    <path d="M820 90l70 140 140 70-140 70-70 140-70-140-140-70 140-70z"/>
+    <path d="M240 420l40 80 80 40-80 40-40 80-40-80-80-40 80-40z"/>
+    <path d="M1320 520l40 80 80 40-80 40-40 80-40-80-80-40 80-40z"/>
+  </g>
+  <circle cx="820" cy="380" r="210" fill="none" stroke="#C4A35A" stroke-width="2" opacity="0.7"/>
+</svg>
