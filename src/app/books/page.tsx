@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { BookCard } from "@/components/books/BookCard";
@@ -40,17 +41,17 @@ export default async function BooksPage({
         from the AA Maka archive.
       </p>
       <div className="mt-8 flex flex-wrap gap-2">
-        <a href="/books" className="rounded-full border border-ink/15 px-3 py-1 text-sm">
+        <Link href="/books" className="rounded-full border border-ink/15 px-3 py-1 text-sm">
           All
-        </a>
+        </Link>
         {categories.map((c) => (
-          <a
+          <Link
             key={c.category}
             href={`/books?category=${encodeURIComponent(c.category)}`}
             className="rounded-full border border-ink/15 px-3 py-1 text-sm capitalize"
           >
             {c.category}
-          </a>
+          </Link>
         ))}
       </div>
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
