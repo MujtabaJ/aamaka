@@ -4,6 +4,8 @@ import { toSlug } from "@/lib/utils";
 import { rupeesToPaisa, formatMoney, paisaToRupees } from "@/lib/money";
 import { audit } from "@/lib/audit";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
+import { ImageFields } from "@/components/admin/ImageFields";
+import { imageFromForm } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminAlbumsPage() {
@@ -22,7 +24,7 @@ export default async function AdminAlbumsPage() {
         slug: toSlug(title),
         description: String(form.get("description") || ""),
         artistId: String(form.get("artistId") || "") || null,
-        coverUrl: String(form.get("coverUrl") || "") || null,
+        coverUrl: await imageFromForm(form, "coverFile", "coverUrl"),
         pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
         accessType: String(form.get("accessType") || "paid"),
         published: true,
@@ -45,7 +47,7 @@ export default async function AdminAlbumsPage() {
         data: {
           title: String(form.get("title")),
           description: String(form.get("description") || ""),
-          coverUrl: String(form.get("coverUrl") || "") || null,
+          coverUrl: await imageFromForm(form, "coverFile", "coverUrl", (await prisma.album.findUnique({ where: { id } }))?.coverUrl),
           pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
           published: form.get("published") === "on",
         },
@@ -67,7 +69,7 @@ export default async function AdminAlbumsPage() {
           </select>
         </Field>
         <Field label="Price (PKR)"><input name="price" type="number" className={inputClass} /></Field>
-        <Field label="Cover image URL"><input name="coverUrl" className={inputClass} /></Field>
+        <div className="md:col-span-2"><ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" /></div>
         <div className="md:col-span-2"><Field label="Description"><input name="description" className={inputClass} /></Field></div>
         <Button type="submit">Create album</Button>
       </form>
@@ -83,7 +85,7 @@ export default async function AdminAlbumsPage() {
                 <Field label="Description"><textarea name="description" defaultValue={a.description ?? ""} className={inputClass} /></Field>
               </div>
               <div className="md:col-span-2">
-                <Field label="Cover image URL"><input name="coverUrl" defaultValue={a.coverUrl ?? ""} className={inputClass} /></Field>
+                <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" url={a.coverUrl} />
               </div>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={a.published} /> Published</label>
               <div className="flex gap-3">

@@ -3,6 +3,8 @@ import { requirePermission } from "@/lib/session";
 import { toSlug } from "@/lib/utils";
 import { rupeesToPaisa, formatMoney } from "@/lib/money";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
+import { ImageFields } from "@/components/admin/ImageFields";
+import { imageFromForm } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminBooksPage() {
@@ -25,7 +27,7 @@ export default async function AdminBooksPage() {
         pages: form.get("pages") ? Number(form.get("pages")) : null,
         description: String(form.get("description") || ""),
         excerpt: String(form.get("excerpt") || "") || null,
-        coverUrl: String(form.get("coverUrl") || "") || null,
+        coverUrl: await imageFromForm(form, "coverFile", "coverUrl"),
         pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
         salePricePaisa: form.get("salePrice") ? rupeesToPaisa(Number(form.get("salePrice"))) : null,
         stock: Number(form.get("stock") || 0),
@@ -58,7 +60,7 @@ export default async function AdminBooksPage() {
           category: String(form.get("category") || "poetry"),
           description: String(form.get("description") || ""),
           excerpt: String(form.get("excerpt") || "") || null,
-          coverUrl: String(form.get("coverUrl") || "") || null,
+          coverUrl: await imageFromForm(form, "coverFile", "coverUrl", (await prisma.book.findUnique({ where: { id } }))?.coverUrl),
           stock: Number(form.get("stock") || 0),
           pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
           published: form.get("published") === "on",
@@ -99,7 +101,7 @@ export default async function AdminBooksPage() {
         <Field label="Price (PKR)"><input name="price" type="number" required className={inputClass} /></Field>
         <Field label="Sale price"><input name="salePrice" type="number" className={inputClass} /></Field>
         <Field label="Stock"><input name="stock" type="number" defaultValue={20} className={inputClass} /></Field>
-        <Field label="Cover image URL"><input name="coverUrl" className={inputClass} /></Field>
+        <div className="md:col-span-2"><ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" /></div>
         <Field label="Excerpt"><input name="excerpt" className={inputClass} /></Field>
         <div className="md:col-span-2">
           <Field label="Description"><textarea name="description" rows={4} className={inputClass} /></Field>
@@ -127,7 +129,7 @@ export default async function AdminBooksPage() {
                 <input name="stock" type="number" defaultValue={b.stock} className={inputClass} />
               </Field>
               <div className="md:col-span-2">
-                <Field label="Cover image URL"><input name="coverUrl" defaultValue={b.coverUrl ?? ""} className={inputClass} /></Field>
+                <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" url={b.coverUrl} />
               </div>
               <div className="md:col-span-2">
                 <Field label="Excerpt"><input name="excerpt" defaultValue={b.excerpt ?? ""} className={inputClass} /></Field>

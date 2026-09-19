@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { toSlug } from "@/lib/utils";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
+import { ImageFields } from "@/components/admin/ImageFields";
+import { imageFromForm } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminArticlesPage() {
@@ -18,7 +20,7 @@ export default async function AdminArticlesPage() {
         slug: toSlug(title),
         excerpt: String(form.get("excerpt") || ""),
         body: String(form.get("body") || ""),
-        coverUrl: String(form.get("coverUrl") || "") || null,
+        coverUrl: await imageFromForm(form, "coverFile", "coverUrl"),
         authorId: user.id,
         authorName: user.name ?? "AA Maka Production",
         published: form.get("published") === "on",
@@ -42,7 +44,7 @@ export default async function AdminArticlesPage() {
           title: String(form.get("title")),
           excerpt: String(form.get("excerpt") || ""),
           body: String(form.get("body") || ""),
-          coverUrl: String(form.get("coverUrl") || "") || null,
+          coverUrl: await imageFromForm(form, "coverFile", "coverUrl", (await prisma.article.findUnique({ where: { id } }))?.coverUrl),
           published: form.get("published") === "on",
         },
       });
@@ -58,7 +60,7 @@ export default async function AdminArticlesPage() {
       <form action={create} className="mt-6 space-y-3 rounded-3xl bg-white p-5">
         <Field label="Title"><input name="title" required className={inputClass} /></Field>
         <Field label="Excerpt"><input name="excerpt" className={inputClass} /></Field>
-        <Field label="Cover image URL"><input name="coverUrl" className={inputClass} /></Field>
+        <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" />
         <Field label="Body (Markdown)"><textarea name="body" rows={8} className={inputClass} /></Field>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked /> Publish</label>
         <Button type="submit">Create article</Button>
@@ -70,7 +72,7 @@ export default async function AdminArticlesPage() {
               <input type="hidden" name="id" value={a.id} />
               <Field label="Title"><input name="title" defaultValue={a.title} className={inputClass} /></Field>
               <Field label="Excerpt"><input name="excerpt" defaultValue={a.excerpt} className={inputClass} /></Field>
-              <Field label="Cover image URL"><input name="coverUrl" defaultValue={a.coverUrl ?? ""} className={inputClass} /></Field>
+              <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" url={a.coverUrl} />
               <Field label="Body"><textarea name="body" rows={6} defaultValue={a.body} className={inputClass} /></Field>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={a.published} /> Published</label>
               <div className="flex gap-3">

@@ -48,10 +48,18 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: artist.coverUrl ? `url(${artist.coverUrl})` : undefined }} />
         <div className="cinema-scrim absolute inset-0" />
         <div className="relative mx-auto flex min-h-[50vh] max-w-page items-end px-4 pb-12 md:px-6">
-          <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-gold">Artist</p>
-            <h1 className="font-display text-5xl md:text-7xl">{artist.name}</h1>
-            {artist.nameSd ? <p className="mt-2 font-sindhi text-2xl">{artist.nameSd}</p> : null}
+          <div className="flex items-end gap-5">
+            {artist.photoUrl ? (
+              <div
+                className="h-28 w-28 shrink-0 rounded-3xl bg-cover bg-center shadow-soft md:h-36 md:w-36"
+                style={{ backgroundImage: `url(${artist.photoUrl})` }}
+              />
+            ) : null}
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-gold">Artist</p>
+              <h1 className="font-display text-5xl md:text-7xl">{artist.name}</h1>
+              {artist.nameSd ? <p className="mt-2 font-sindhi text-2xl">{artist.nameSd}</p> : null}
+            </div>
           </div>
         </div>
       </div>

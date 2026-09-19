@@ -17,6 +17,7 @@ export function privateDir() {
 }
 
 export function publicMediaDir() {
+  if (process.env.VERCEL) return "/tmp/aamaka-media";
   return path.join(process.cwd(), "public", "media");
 }
 
