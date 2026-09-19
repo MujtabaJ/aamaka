@@ -6,6 +6,7 @@ import { isStaffRole } from "@/lib/rbac";
 
 export const authConfig = {
   trustHost: true,
+  secret: process.env.AUTH_SECRET,
   pages: {
     signIn: "/login",
     error: "/login",
