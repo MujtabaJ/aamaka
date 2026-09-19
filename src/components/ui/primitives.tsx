@@ -68,6 +68,7 @@ export function Section({
   children,
   dark = false,
   id,
+  imageUrl,
 }: {
   eyebrow?: string;
   title?: string;
@@ -76,10 +77,17 @@ export function Section({
   children: React.ReactNode;
   dark?: boolean;
   id?: string;
+  imageUrl?: string;
 }) {
   return (
     <section id={id} className={cn("py-16 md:py-24", dark && "bg-ink text-cream")}>
       <div className="mx-auto max-w-page px-4 md:px-6">
+        {imageUrl ? (
+          <div
+            className="mb-8 h-40 overflow-hidden rounded-3xl bg-cover bg-center md:h-52"
+            style={{ backgroundImage: `url(${imageUrl})` }}
+          />
+        ) : null}
         {(title || eyebrow) && (
           <div className="mb-10 flex flex-col gap-4 md:mb-14 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">

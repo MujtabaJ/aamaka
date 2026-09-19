@@ -1,7 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import { getSettings } from "@/lib/settings";
 import { Button, Field, inputClass } from "@/components/ui/primitives";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
 
 export const metadata = pageMeta({
   title: "Contact",
@@ -14,17 +14,20 @@ export default async function ContactPage({
 }: {
   searchParams: Promise<{ sent?: string }>;
 }) {
-  const settings = await getSettings();
+  const [settings, section] = await Promise.all([getSettings(), getHomepageSection("contact")]);
   const { sent } = await searchParams;
   return (
     <div className="mx-auto grid max-w-page gap-10 px-4 py-16 md:grid-cols-2 md:px-6">
       <div>
-        <div
-          className="mb-8 h-40 overflow-hidden rounded-3xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${photos.listening})` }}
-        />
-        <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Contact</p>
-        <h1 className="mt-3 font-display text-5xl">Write to the studio</h1>
+        {section?.imageUrl ? (
+          <div
+            className="mb-8 h-40 overflow-hidden rounded-3xl bg-cover bg-center"
+            style={{ backgroundImage: `url(${section.imageUrl})` }}
+          />
+        ) : null}
+        <p className="text-xs uppercase tracking-[0.28em] text-ajrak">{section?.eyebrow || "Contact"}</p>
+        <h1 className="mt-3 font-display text-5xl">{section?.title || "Write to the studio"}</h1>
+        {section?.subtitle ? <p className="mt-3 text-ink/70">{section.subtitle}</p> : null}
         <p className="mt-4 text-ink/70">{settings.address}</p>
         <p className="mt-2">{settings.email}</p>
         <p>{settings.phone}</p>

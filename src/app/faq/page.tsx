@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 
 export const metadata = pageMeta({
   title: "FAQ",
@@ -9,18 +10,16 @@ export const metadata = pageMeta({
 });
 
 export default async function FaqPage() {
-  const faqs = await prisma.faq.findMany({
-    where: { published: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [faqs, section] = await Promise.all([
+    prisma.faq.findMany({
+      where: { published: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getHomepageSection("faq"),
+  ]);
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 md:px-6">
-      <div
-        className="mb-10 h-48 overflow-hidden rounded-3xl bg-cover bg-center"
-        style={{ backgroundImage: `url(${photos.listening})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Help</p>
-      <h1 className="mt-3 font-display text-5xl">Frequently asked questions</h1>
+      <PageHero section={section} fallbackTitle="Frequently asked questions" />
       <div className="mt-10 space-y-4">
         {faqs.map((faq) => (
           <article key={faq.id} className="rounded-3xl bg-white p-6 shadow-soft">

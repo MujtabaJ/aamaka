@@ -3,7 +3,8 @@ import { pageMeta } from "@/lib/seo";
 import { formatMoney } from "@/lib/money";
 import { parseJson } from "@/lib/utils";
 import { Button } from "@/components/ui/primitives";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 import Link from "next/link";
 
 export const metadata = pageMeta({
@@ -13,23 +14,18 @@ export const metadata = pageMeta({
 });
 
 export default async function MembershipPage() {
-  const plans = await prisma.membershipPlan.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [plans, section] = await Promise.all([
+    prisma.membershipPlan.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getHomepageSection("membership"),
+  ]);
   return (
     <div className="mx-auto max-w-page px-4 py-16 md:px-6">
-      <div
-        className="mb-10 h-52 overflow-hidden rounded-3xl bg-cover bg-center md:h-64"
-        style={{ backgroundImage: `url(${photos.concert})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Membership</p>
-      <h1 className="mt-3 max-w-3xl font-display text-5xl md:text-6xl">
-        Unlock the full song. Keep the culture close.
-      </h1>
-      <p className="mt-4 max-w-2xl text-ink/70">
-        Members hear complete recordings, exclusive studio work and early-access releases. Visitors still
-        get a generous preview. See the <Link href="/faq" className="text-ajrak">FAQ</Link> for access details.
+      <PageHero section={section} fallbackTitle="Unlock the full song. Keep the culture close." />
+      <p className="mt-4 max-w-2xl text-sm text-ink/60">
+        See the <Link href="/faq" className="text-ajrak">FAQ</Link> for access details.
       </p>
       <div className="mt-12 grid gap-6 md:grid-cols-3">
         {plans.map((plan) => {

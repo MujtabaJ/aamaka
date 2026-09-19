@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { getSettings } from "@/lib/settings";
 import { Button } from "@/components/ui/primitives";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
 
 export const metadata = pageMeta({
   title: "About AA Maka Production",
@@ -11,18 +11,23 @@ export const metadata = pageMeta({
 });
 
 export default async function AboutPage() {
-  const settings = await getSettings();
-  const page = await prisma.sitePage.findUnique({ where: { slug: "about" } });
+  const [settings, page, section] = await Promise.all([
+    getSettings(),
+    prisma.sitePage.findUnique({ where: { slug: "about" } }),
+    getHomepageSection("about"),
+  ]);
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 md:px-6">
-      <div
-        className="relative mb-10 h-56 overflow-hidden rounded-3xl bg-ink bg-cover bg-center md:h-72"
-        style={{ backgroundImage: `url(${photos.studio})` }}
-      >
-        <div className="cinema-scrim absolute inset-0" />
-      </div>
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">About</p>
-      <h1 className="mt-3 font-display text-5xl">{page?.title || settings.siteName}</h1>
+      {section?.imageUrl ? (
+        <div
+          className="relative mb-10 h-56 overflow-hidden rounded-3xl bg-ink bg-cover bg-center md:h-72"
+          style={{ backgroundImage: `url(${section.imageUrl})` }}
+        >
+          <div className="cinema-scrim absolute inset-0" />
+        </div>
+      ) : null}
+      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">{section?.eyebrow || "About"}</p>
+      <h1 className="mt-3 font-display text-5xl">{page?.title || section?.title || settings.siteName}</h1>
       <div className="prose prose-aamaka mt-8 max-w-none whitespace-pre-wrap">
         {page?.body || settings.mission}
       </div>

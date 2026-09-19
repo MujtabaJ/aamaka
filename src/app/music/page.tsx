@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { SongCard } from "@/components/music/SongCard";
 import { EmptyState } from "@/components/ui/primitives";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = pageMeta({
@@ -33,7 +34,7 @@ export default async function MusicPage({
         }
       : {}),
   };
-  const [songs, genres, artists] = await Promise.all([
+  const [songs, genres, artists, section] = await Promise.all([
     prisma.song.findMany({
       where,
       include: { artist: true, genre: true },
@@ -43,6 +44,7 @@ export default async function MusicPage({
     }),
     prisma.genre.findMany({ where: { published: true } }),
     prisma.artist.findMany({ where: { published: true }, orderBy: { name: "asc" } }),
+    getHomepageSection("music"),
   ]);
   const queue = songs.map((s) => ({
     id: s.id,
@@ -59,12 +61,7 @@ export default async function MusicPage({
 
   return (
     <div className="mx-auto max-w-page px-4 py-12 md:px-6">
-      <div
-        className="mb-10 h-48 overflow-hidden rounded-3xl bg-cover bg-center"
-        style={{ backgroundImage: `url(${photos.concert})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Library</p>
-      <h1 className="mt-3 font-display text-5xl">Sindhi music</h1>
+      <PageHero section={section} fallbackTitle="Sindhi music" />
       <form className="mt-8 grid gap-3 rounded-3xl bg-white p-4 shadow-soft md:grid-cols-5">
         <input name="q" defaultValue={params.q} placeholder="Search songs" className="rounded-xl border border-ink/10 px-3 py-2 text-sm md:col-span-2" />
         <select name="genre" defaultValue={params.genre} className="rounded-xl border border-ink/10 px-3 py-2 text-sm">

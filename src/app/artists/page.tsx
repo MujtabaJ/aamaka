@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { ArtistCard } from "@/components/music/ArtistCard";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 
 export const metadata = pageMeta({
   title: "Sindhi Artists",
@@ -10,18 +11,16 @@ export const metadata = pageMeta({
 });
 
 export default async function ArtistsPage() {
-  const artists = await prisma.artist.findMany({
-    where: { published: true },
-    orderBy: [{ featured: "desc" }, { name: "asc" }],
-  });
+  const [artists, section] = await Promise.all([
+    prisma.artist.findMany({
+      where: { published: true },
+      orderBy: [{ featured: "desc" }, { name: "asc" }],
+    }),
+    getHomepageSection("artists"),
+  ]);
   return (
     <div className="mx-auto max-w-page px-4 py-16 md:px-6">
-      <div
-        className="mb-10 h-48 overflow-hidden rounded-3xl bg-cover bg-center"
-        style={{ backgroundImage: `url(${photos.mic})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Voices</p>
-      <h1 className="mt-3 font-display text-5xl">Artists</h1>
+      <PageHero section={section} fallbackTitle="Artists" />
       <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         {artists.map((artist) => (
           <ArtistCard key={artist.id} artist={artist} />

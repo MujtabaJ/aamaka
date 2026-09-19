@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { formatDate } from "@/lib/utils";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 
 export const metadata = pageMeta({
   title: "Cultural stories",
@@ -11,18 +12,16 @@ export const metadata = pageMeta({
 });
 
 export default async function StoriesPage() {
-  const articles = await prisma.article.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-  });
+  const [articles, section] = await Promise.all([
+    prisma.article.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+    }),
+    getHomepageSection("stories"),
+  ]);
   return (
     <div className="mx-auto max-w-page px-4 py-16 md:px-6">
-      <div
-        className="mb-10 h-48 overflow-hidden rounded-3xl bg-cover bg-center"
-        style={{ backgroundImage: `url(${photos.writing})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Journal</p>
-      <h1 className="mt-3 font-display text-5xl">Cultural stories</h1>
+      <PageHero section={section} fallbackTitle="Cultural stories" />
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {articles.map((article) => (
           <Link key={article.id} href={`/stories/${article.slug}`} className="overflow-hidden rounded-3xl bg-white shadow-soft">

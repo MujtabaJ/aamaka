@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { pageMeta } from "@/lib/seo";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { photos } from "@/lib/photos";
+import { getHomepageSection } from "@/lib/homepage";
+import { PageHero } from "@/components/content/PageHero";
 import Link from "next/link";
 
 export const metadata = pageMeta({
@@ -16,7 +17,7 @@ export default async function ShopPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
-  const [categories, products] = await Promise.all([
+  const [categories, products, section] = await Promise.all([
     prisma.productCategory.findMany({
       where: { published: true, parentId: null },
       include: { children: true },
@@ -31,15 +32,11 @@ export default async function ShopPage({
       },
       include: { category: true },
     }),
+    getHomepageSection("shop"),
   ]);
   return (
     <div className="mx-auto max-w-page px-4 py-16 md:px-6">
-      <div
-        className="mb-10 h-48 overflow-hidden rounded-3xl bg-cover bg-center"
-        style={{ backgroundImage: `url(${photos.textilePattern})` }}
-      />
-      <p className="text-xs uppercase tracking-[0.28em] text-ajrak">Marketplace</p>
-      <h1 className="mt-3 font-display text-5xl">Shop Sindhi culture</h1>
+      <PageHero section={section} fallbackTitle="Shop Sindhi culture" />
       <div className="mt-8 flex flex-wrap gap-2">
         <Link href="/shop" className="rounded-full border border-ink/15 px-3 py-1 text-sm">
           All
