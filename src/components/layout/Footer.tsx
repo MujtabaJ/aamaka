@@ -32,6 +32,7 @@ export function Footer({ settings, dict }: { settings: SiteSettings; dict: Dicti
             <Link href="/stories">Stories</Link>
             <Link href="/about">About</Link>
             <Link href="/contact">Contact</Link>
+            <Link href="/faq">FAQ</Link>
           </div>
         </div>
         <div>

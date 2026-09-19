@@ -25,7 +25,12 @@ export function LoginForm() {
       setError("Email or password is incorrect.");
       return;
     }
-    router.push(params.get("callbackUrl") || "/account");
+    const raw = params.get("callbackUrl") || "/account";
+    const next =
+      raw.startsWith("/") && !raw.startsWith("//")
+        ? raw
+        : "/account";
+    router.push(next);
     router.refresh();
   }
 
@@ -37,10 +42,15 @@ export function LoginForm() {
       <Field label="Password">
         <input name="password" type="password" required className={inputClass} />
       </Field>
-      {error ? <p className="text-sm text-ajrak">{error}</p> : null}
+      {error || params.get("error") ? (
+        <p className="text-sm text-ajrak">{error || "Sign-in could not be completed. Try again."}</p>
+      ) : null}
       <Button type="submit" variant="primary" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
+      <p className="text-center text-sm text-ink/60">
+        <Link href="/forgot-password" className="text-ajrak">Forgot password?</Link>
+      </p>
       <p className="text-center text-sm text-ink/60">
         New here? <Link href="/register" className="text-ajrak">Create an account</Link>
       </p>

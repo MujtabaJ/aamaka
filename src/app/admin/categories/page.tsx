@@ -19,6 +19,27 @@ export default async function AdminCategoriesPage() {
       },
     });
     revalidatePath("/admin/categories");
+    revalidatePath("/shop");
+  }
+  async function update(form: FormData) {
+    "use server";
+    await requirePermission("products.manage");
+    const id = String(form.get("id"));
+    if (form.get("action") === "delete") {
+      await prisma.productCategory.update({ where: { id }, data: { published: false } });
+    } else {
+      await prisma.productCategory.update({
+        where: { id },
+        data: {
+          name: String(form.get("name")),
+          description: String(form.get("description") || "") || null,
+          imageUrl: String(form.get("imageUrl") || "") || null,
+          published: form.get("published") === "on",
+        },
+      });
+    }
+    revalidatePath("/admin/categories");
+    revalidatePath("/shop");
   }
   return (
     <div>
@@ -33,11 +54,22 @@ export default async function AdminCategoriesPage() {
         </Field>
         <Button type="submit">Add category</Button>
       </form>
-      <ul className="mt-6 space-y-2">
+      <ul className="mt-6 space-y-3">
         {categories.map((c) => (
           <li key={c.id} className="rounded-2xl bg-white p-4 text-sm">
-            {c.parent ? `${c.parent.name} / ` : ""}
-            {c.name}
+            <form action={update} className="grid gap-3 md:grid-cols-2">
+              <input type="hidden" name="id" value={c.id} />
+              <Field label="Name"><input name="name" defaultValue={c.name} className={inputClass} /></Field>
+              <Field label="Image URL"><input name="imageUrl" defaultValue={c.imageUrl ?? ""} className={inputClass} /></Field>
+              <div className="md:col-span-2">
+                <Field label="Description"><textarea name="description" defaultValue={c.description ?? ""} className={inputClass} /></Field>
+              </div>
+              <label className="flex items-center gap-2"><input type="checkbox" name="published" defaultChecked={c.published} /> Published</label>
+              <div className="flex gap-3">
+                <Button type="submit">Save</Button>
+                <button name="action" value="delete" className="text-ajrak">Hide</button>
+              </div>
+            </form>
           </li>
         ))}
       </ul>

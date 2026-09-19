@@ -23,7 +23,8 @@ export default async function NewProductPage() {
         <Field label="Stock"><input name="stock" type="number" defaultValue={10} className={inputClass} /></Field>
         <Field label="Short description"><input name="shortDescription" className={inputClass} /></Field>
         <Field label="Description"><textarea name="description" required className={inputClass} /></Field>
-        <Field label="Images"><input name="images" type="file" accept="image/*" multiple /></Field>
+        <Field label="Image URLs (one per line)"><textarea name="imageUrls" rows={3} className={inputClass} /></Field>
+        <Field label="Or upload images"><input name="images" type="file" accept="image/*" multiple /></Field>
         <Field label="Shipping info"><input name="shippingInfo" className={inputClass} /></Field>
         <Field label="Status">
           <select name="status" className={inputClass}>

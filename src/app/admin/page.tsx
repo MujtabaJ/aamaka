@@ -22,7 +22,9 @@ export default async function AdminHome() {
     newMembers,
     albumItems,
     productItems,
+    bookItems,
     lowStock,
+    lowBooks,
     latestOrders,
     latestSubs,
   ] = await Promise.all([
@@ -37,12 +39,15 @@ export default async function AdminHome() {
     prisma.subscription.count({ where: { createdAt: { gte: month } } }),
     prisma.orderItem.aggregate({ _sum: { totalPaisa: true }, where: { kind: "album" } }),
     prisma.orderItem.aggregate({ _sum: { totalPaisa: true }, where: { kind: "product" } }),
+    prisma.orderItem.aggregate({ _sum: { totalPaisa: true }, where: { kind: "book" } }),
     prisma.product.findMany({ where: { status: "published" } }),
+    prisma.book.findMany({ where: { published: true, format: { not: "ebook" } } }),
     prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
     prisma.subscription.findMany({ include: { user: true, plan: true }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
 
   const low = lowStock.filter((p) => p.stock <= p.lowStockAt);
+  const lowBookRows = lowBooks.filter((b) => b.stock <= b.lowStockAt);
   const cards = [
     ["Total sales", formatMoney(totalSales._sum.totalPaisa ?? 0)],
     ["Today", formatMoney(todaySales._sum.totalPaisa ?? 0)],
@@ -55,7 +60,8 @@ export default async function AdminHome() {
     ["New members", String(newMembers)],
     ["Album sales", formatMoney(albumItems._sum.totalPaisa ?? 0)],
     ["Product sales", formatMoney(productItems._sum.totalPaisa ?? 0)],
-    ["Low stock", String(low.length)],
+    ["Book sales", formatMoney(bookItems._sum.totalPaisa ?? 0)],
+    ["Low stock", String(low.length + lowBookRows.length)],
   ];
 
   return (
@@ -98,6 +104,11 @@ export default async function AdminHome() {
               {low.map((p) => (
                 <p key={p.id} className="text-sm text-ajrak">
                   {p.name} ({p.stock})
+                </p>
+              ))}
+              {lowBookRows.map((b) => (
+                <p key={b.id} className="text-sm text-ajrak">
+                  {b.title} ({b.stock})
                 </p>
               ))}
             </div>

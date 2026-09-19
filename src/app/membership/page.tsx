@@ -4,6 +4,7 @@ import { formatMoney } from "@/lib/money";
 import { parseJson } from "@/lib/utils";
 import { Button } from "@/components/ui/primitives";
 import { photos } from "@/lib/photos";
+import Link from "next/link";
 
 export const metadata = pageMeta({
   title: "Membership",
@@ -28,7 +29,7 @@ export default async function MembershipPage() {
       </h1>
       <p className="mt-4 max-w-2xl text-ink/70">
         Members hear complete recordings, exclusive studio work and early-access releases. Visitors still
-        get a generous preview.
+        get a generous preview. See the <Link href="/faq" className="text-ajrak">FAQ</Link> for access details.
       </p>
       <div className="mt-12 grid gap-6 md:grid-cols-3">
         {plans.map((plan) => {

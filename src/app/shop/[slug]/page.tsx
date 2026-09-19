@@ -5,6 +5,7 @@ import { formatMoney, effectivePrice, salePercent } from "@/lib/money";
 import { parseJson } from "@/lib/utils";
 import { Badge, Button, Field, inputClass } from "@/components/ui/primitives";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { ReviewForm } from "@/components/shop/ReviewForm";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -96,7 +97,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <Field label="Quantity">
               <input name="quantity" type="number" min={1} defaultValue={1} className={inputClass} />
             </Field>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" variant="primary" disabled={product.stock <= 0}>
                 Add to cart
               </Button>
@@ -104,6 +105,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 Buy now
               </Button>
             </div>
+          </form>
+          <form action="/api/wishlist" method="post" className="mt-3">
+            <input type="hidden" name="kind" value="product" />
+            <input type="hidden" name="id" value={product.id} />
+            <Button type="submit" variant="secondary">
+              Wishlist
+            </Button>
           </form>
           <div className="prose prose-aamaka mt-8 max-w-none text-sm">
             <p>{product.description}</p>
@@ -122,6 +130,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </article>
           ))}
         </div>
+        <ReviewForm productId={product.id} slug={product.slug} />
       </section>
       {related.length ? (
         <section className="mt-16">

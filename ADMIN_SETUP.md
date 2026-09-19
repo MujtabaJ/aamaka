@@ -99,7 +99,7 @@ Reusable templates live in `src/lib/notifications.ts`:
 - Subscription activated / expiring
 - Admin: new order, new customer, newsletter, contact, low stock
 
-Without SMTP, messages are stored as in-app notifications and printed to the console. Connect SMTP or a provider (SES, Postmark, Resend) in `deliverEmail` without changing callers.
+Without SMTP, messages are stored as in-app notifications and printed to the console in development. When `SMTP_HOST` is set, `src/lib/mail.ts` sends mail through nodemailer.
 
 ## 7. Deployment
 

@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.book.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
   ]);
 
-  const staticPaths = ["", "/music", "/albums", "/artists", "/shop", "/books", "/membership", "/about", "/stories", "/contact"];
+  const staticPaths = ["", "/music", "/albums", "/artists", "/shop", "/books", "/membership", "/about", "/stories", "/contact", "/faq"];
   return [
     ...staticPaths.map((path) => ({ url: siteUrl(path || "/"), lastModified: new Date() })),
     ...songs.map((s) => ({ url: siteUrl(`/music/song/${s.slug}`), lastModified: s.updatedAt })),
@@ -22,6 +22,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...products.map((s) => ({ url: siteUrl(`/shop/${s.slug}`), lastModified: s.updatedAt })),
     ...books.map((s) => ({ url: siteUrl(`/books/${s.slug}`), lastModified: s.updatedAt })),
     ...articles.map((s) => ({ url: siteUrl(`/stories/${s.slug}`), lastModified: s.updatedAt })),
-    ...pages.map((s) => ({ url: siteUrl(`/policies/${s.slug}`), lastModified: s.updatedAt })),
+    ...pages
+      .filter((s) => s.slug !== "about")
+      .map((s) => ({ url: siteUrl(`/policies/${s.slug}`), lastModified: s.updatedAt })),
   ];
 }

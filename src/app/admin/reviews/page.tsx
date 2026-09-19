@@ -18,6 +18,7 @@ export default async function AdminReviewsPage() {
     <div>
       <h1 className="font-display text-4xl">Reviews</h1>
       <ul className="mt-6 space-y-3">
+        {reviews.length === 0 ? <p className="text-sm text-ink/60">No reviews yet.</p> : null}
         {reviews.map((r) => (
           <li key={r.id} className="rounded-2xl bg-white p-4">
             <p className="text-sm">{r.user.name} on {r.product.name} · {r.rating}/5 · {r.status}</p>

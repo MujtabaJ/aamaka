@@ -70,3 +70,18 @@ export const couponSchema = z.object({
   type: z.enum(["percent", "fixed"]),
   value: z.number().int().positive(),
 });
+
+export const reviewSchema = z.object({
+  productId: z.string().min(1),
+  rating: z.coerce.number().int().min(1).max(5),
+  body: z.string().min(8).max(2000),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(20),
+  password: z.string().min(8).max(72),
+});

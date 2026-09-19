@@ -114,7 +114,7 @@ export async function saveSong(form: FormData) {
     published: form.get("published") === "on",
     seoTitle: String(form.get("seoTitle") || "") || null,
     seoDescription: String(form.get("seoDescription") || "") || null,
-    ...(coverUrl ? { coverUrl } : {}),
+    coverUrl: coverUrl || String(form.get("coverUrl") || "") || undefined,
     ...(previewMediaId ? { previewMediaId } : {}),
     ...(fullAudioMediaId ? { fullAudioMediaId } : {}),
     ...(fullVideoMediaId ? { fullVideoMediaId } : {}),
@@ -155,7 +155,18 @@ export async function saveProduct(form: FormData) {
     shippingInfo: String(form.get("shippingInfo") || "") || null,
     status: String(form.get("status") || "draft"),
     featured: form.get("featured") === "on",
-    ...(images.length ? { images: JSON.stringify(images) } : {}),
+    ...(images.length
+      ? { images: JSON.stringify(images) }
+      : String(form.get("imageUrls") || "").trim()
+        ? {
+            images: JSON.stringify(
+              String(form.get("imageUrls"))
+                .split("\n")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            ),
+          }
+        : {}),
   };
   const product = id
     ? await prisma.product.update({ where: { id }, data })
@@ -190,4 +201,24 @@ export async function updateOrderStatus(form: FormData) {
   });
   revalidatePath("/admin/orders");
   redirect(`/admin/orders/${id}`);
+}
+
+export async function deleteSong(form: FormData) {
+  const user = await requirePermission("music.manage");
+  const id = String(form.get("id"));
+  await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
+  await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
+  revalidatePath("/admin/music");
+  revalidatePath("/music");
+  redirect("/admin/music");
+}
+
+export async function deleteProduct(form: FormData) {
+  const user = await requirePermission("products.manage");
+  const id = String(form.get("id"));
+  await prisma.product.update({ where: { id }, data: { status: "archived" } });
+  await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  redirect("/admin/products");
 }

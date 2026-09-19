@@ -16,6 +16,7 @@ const nav = [
   { href: "/admin/coupons", label: "Coupons" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/articles", label: "Articles" },
+  { href: "/admin/faqs", label: "FAQs" },
   { href: "/admin/homepage", label: "Homepage" },
   { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/analytics", label: "Analytics" },

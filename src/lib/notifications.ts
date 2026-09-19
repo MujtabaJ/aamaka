@@ -30,30 +30,16 @@ export async function notify(input: NotifyInput) {
 }
 
 async function deliverEmail(input: NotifyInput) {
+  const { sendMail } = await import("@/lib/mail");
   const to =
     input.audience === "admin"
       ? process.env.NOTIFY_ADMIN_EMAIL
       : await resolveUserEmail(input.userId);
-
-  const payload = {
+  await sendMail({
     to,
-    from: process.env.SMTP_FROM,
     subject: input.title,
     text: input.body,
     href: input.href,
-  };
-
-  if (!process.env.SMTP_HOST) {
-    if (process.env.NODE_ENV !== "production") {
-      console.info("[email:console]", payload);
-    }
-    return;
-  }
-
-  console.info("[email:smtp-not-fully-wired]", {
-    host: process.env.SMTP_HOST,
-    to: payload.to,
-    subject: payload.subject,
   });
 }
 
