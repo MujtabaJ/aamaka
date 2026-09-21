@@ -21,8 +21,12 @@ export function LoginForm() {
       redirect: false,
     });
     setPending(false);
-    if (res?.error) {
-      setError("Email or password is incorrect.");
+    if (!res || res.error) {
+      setError(
+        res?.error === "Configuration"
+          ? "Sign-in is temporarily unavailable. Please try again in a minute."
+          : "Email or password is incorrect.",
+      );
       return;
     }
     const raw = params.get("callbackUrl") || "/account";
