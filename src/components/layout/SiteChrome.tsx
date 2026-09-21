@@ -25,10 +25,10 @@ export async function SiteChrome({
   }
 
   return (
-    <div className="flex min-h-screen flex-col pb-24 md:pb-28">
+    <div className="flex min-h-dvh flex-col">
       <AnnouncementBar />
       <Header settings={settings} dict={dict} locale={locale} />
-      <main className="flex-1">{children}</main>
+      <main className="min-w-0 flex-1">{children}</main>
       <Footer settings={settings} dict={dict} />
       <MusicPlayer />
       <MobileNav dict={dict} />

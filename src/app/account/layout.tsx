@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
+import { isStaffRole } from "@/lib/rbac";
 import { signOut } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 const links = [
   { href: "/account", label: "Profile" },
@@ -14,7 +16,8 @@ const links = [
 ];
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  await requireUser();
+  const user = await requireUser();
+  if (isStaffRole(user.role)) redirect("/admin");
   return (
     <div className="mx-auto grid max-w-page gap-8 px-4 py-12 md:grid-cols-[220px_1fr] md:px-6">
       <aside className="h-fit rounded-3xl bg-white p-4">

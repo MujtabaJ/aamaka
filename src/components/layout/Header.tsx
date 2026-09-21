@@ -45,7 +45,7 @@ export function Header({
             AA
           </span>
           <span className="leading-tight">
-            <span className="block font-display text-lg md:text-xl">{settings.siteName}</span>
+            <span className="block max-w-[9.5rem] truncate font-display text-base sm:max-w-none sm:text-lg md:text-xl">{settings.siteName}</span>
             <span className="hidden text-[11px] uppercase tracking-[0.22em] text-ink/50 sm:block">
               Music · Culture · Heritage
             </span>

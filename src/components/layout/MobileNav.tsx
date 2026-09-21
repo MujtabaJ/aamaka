@@ -2,18 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Crown, Home, Library, ShoppingBag, UserRound } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
 export function MobileNav({ dict }: { dict: Dictionary }) {
   const pathname = usePathname();
+  const { data } = useSession();
+  const accountHref = data?.user?.isStaff ? "/admin" : "/account";
+  const accountLabel = data?.user?.isStaff ? "Dashboard" : dict.nav.account;
   const items = [
     { href: "/", label: dict.nav.home, icon: Home },
     { href: "/music", label: dict.nav.music, icon: Library },
     { href: "/shop", label: dict.nav.shop, icon: ShoppingBag },
     { href: "/membership", label: dict.nav.membership, icon: Crown },
-    { href: "/account", label: dict.nav.account, icon: UserRound },
+    { href: accountHref, label: accountLabel, icon: UserRound },
   ];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-cream/95 backdrop-blur md:hidden">

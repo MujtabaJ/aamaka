@@ -4,12 +4,12 @@ import type { SiteSettings } from "@/lib/settings";
 
 export function Footer({ settings, dict }: { settings: SiteSettings; dict: Dictionary }) {
   return (
-    <footer className="mt-10 border-t border-ink/10 bg-ink text-cream">
-      <div className="mx-auto grid max-w-page gap-10 px-4 py-14 md:grid-cols-4 md:px-6">
+    <footer className="mt-auto border-t border-ink/10 bg-ink pb-16 text-cream md:pb-0">
+      <div className="mx-auto grid max-w-page gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-4 md:px-6">
         <div className="md:col-span-2">
           <p className="font-display text-3xl">{settings.siteName}</p>
           <p className="mt-3 max-w-md text-sm text-cream/70">{settings.mission}</p>
-          <form action="/api/newsletter" method="post" className="mt-6 flex max-w-md gap-2">
+          <form action="/api/newsletter" method="post" className="mt-6 flex max-w-md flex-col gap-2 sm:flex-row">
             <input
               name="email"
               type="email"
@@ -17,7 +17,7 @@ export function Footer({ settings, dict }: { settings: SiteSettings; dict: Dicti
               placeholder={dict.footer.newsletter}
               className="w-full rounded-full border border-cream/20 bg-transparent px-4 py-2.5 text-sm"
             />
-            <button className="rounded-full bg-gold px-4 py-2 text-sm text-ink">Join</button>
+            <button className="rounded-full bg-gold px-4 py-2 text-sm text-ink sm:shrink-0">Join</button>
           </form>
         </div>
         <div>

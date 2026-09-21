@@ -90,7 +90,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </>
         ) : null}
       </head>
-      <body className="min-h-screen bg-cream font-sans text-ink antialiased">
+      <body className="min-h-dvh bg-cream font-sans text-ink antialiased">
         <Providers locale={locale} dict={dict}>
           <SiteChrome settings={settings} locale={locale} dict={dict}>
             {children}

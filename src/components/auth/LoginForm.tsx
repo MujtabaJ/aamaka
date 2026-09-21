@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button, Field, inputClass } from "@/components/ui/primitives";
@@ -29,10 +29,15 @@ export function LoginForm() {
       );
       return;
     }
-    const raw = params.get("callbackUrl") || "/account";
-    const next =
-      raw.startsWith("/") && !raw.startsWith("//")
-        ? raw
+    const session = await getSession();
+    const callback = params.get("callbackUrl") || "";
+    const safeCallback = callback.startsWith("/") && !callback.startsWith("//") ? callback : "";
+    const next = session?.user?.isStaff
+      ? safeCallback.startsWith("/admin")
+        ? safeCallback
+        : "/admin"
+      : safeCallback && !safeCallback.startsWith("/admin")
+        ? safeCallback
         : "/account";
     router.push(next);
     router.refresh();
