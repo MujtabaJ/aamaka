@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { getHomepageSections } from "@/lib/homepage";
-import { RowActions } from "@/components/admin/RowActions";
+import { DeleteButton, RowActions } from "@/components/admin/RowActions";
 import { addCustomSection, deleteAnnouncement, deleteHero, deleteHomepageSection, deletePage } from "@/app/admin/entity-actions";
 
 export default async function AdminHomepagePage() {
@@ -109,10 +109,7 @@ export default async function AdminHomepagePage() {
                 <td>
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/admin/homepage/page/${page.slug}`} className="rounded-full bg-ink px-3 py-1.5 text-sm text-cream">Edit</Link>
-                    <form action={deletePage}>
-                      <input type="hidden" name="slug" value={page.slug} />
-                      <button className="rounded-full border border-ajrak/40 px-3 py-1.5 text-sm text-ajrak">Delete</button>
-                    </form>
+                    <DeleteButton action={deletePage} id={page.slug} name="slug" />
                   </div>
                 </td>
               </tr>

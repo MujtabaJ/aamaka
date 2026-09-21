@@ -5,10 +5,12 @@ import Link from "next/link";
 export function DeleteButton({
   action,
   id,
+  name = "id",
   label = "Delete",
 }: {
   action: (form: FormData) => void | Promise<void>;
   id: string;
+  name?: string;
   label?: string;
 }) {
   return (
@@ -18,8 +20,10 @@ export function DeleteButton({
         if (!confirm("Delete this item?")) event.preventDefault();
       }}
     >
-      <input type="hidden" name="id" value={id} />
-      <button className="rounded-full border border-ajrak/40 px-3 py-1.5 text-sm text-ajrak">{label}</button>
+      <input type="hidden" name={name} value={id} />
+      <button type="submit" className="rounded-full border border-ajrak/40 px-3 py-1.5 text-sm text-ajrak">
+        {label}
+      </button>
     </form>
   );
 }

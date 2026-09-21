@@ -18,8 +18,9 @@ export async function SiteChrome({
   locale: Locale;
   dict: Dictionary;
 }) {
-  const pathname = (await headers()).get("x-pathname") || "";
-  if (pathname.startsWith("/admin")) {
+  const headerList = await headers();
+  const pathname = headerList.get("x-pathname") || headerList.get("next-url") || "";
+  if (pathname.startsWith("/admin") || pathname.includes("/admin/")) {
     return <>{children}</>;
   }
 
