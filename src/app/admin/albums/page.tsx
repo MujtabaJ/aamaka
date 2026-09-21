@@ -1,101 +1,37 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { toSlug } from "@/lib/utils";
-import { rupeesToPaisa, formatMoney, paisaToRupees } from "@/lib/money";
-import { audit } from "@/lib/audit";
-import { Field, inputClass, Button } from "@/components/ui/primitives";
-import { ImageFields } from "@/components/admin/ImageFields";
-import { imageFromForm } from "@/lib/admin-images";
-import { revalidatePath } from "next/cache";
+import { formatMoney } from "@/lib/money";
+import { RowActions } from "@/components/admin/RowActions";
+import { deleteAlbum } from "@/app/admin/entity-actions";
 
 export default async function AdminAlbumsPage() {
-  const user = await requirePermission("music.manage");
-  const [albums, artists] = await Promise.all([
-    prisma.album.findMany({ include: { artist: true, tracks: true }, orderBy: { createdAt: "desc" } }),
-    prisma.artist.findMany(),
-  ]);
-
-  async function create(form: FormData) {
-    "use server";
-    const title = String(form.get("title"));
-    const album = await prisma.album.create({
-      data: {
-        title,
-        slug: toSlug(title),
-        description: String(form.get("description") || ""),
-        artistId: String(form.get("artistId") || "") || null,
-        coverUrl: await imageFromForm(form, "coverFile", "coverUrl"),
-        pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
-        accessType: String(form.get("accessType") || "paid"),
-        published: true,
-      },
-    });
-    await audit({ userId: user.id, action: "create", entity: "album", entityId: album.id });
-    revalidatePath("/admin/albums");
-    revalidatePath("/albums");
-  }
-
-  async function update(form: FormData) {
-    "use server";
-    await requirePermission("music.manage");
-    const id = String(form.get("id"));
-    if (form.get("action") === "delete") {
-      await prisma.album.update({ where: { id }, data: { published: false } });
-    } else {
-      await prisma.album.update({
-        where: { id },
-        data: {
-          title: String(form.get("title")),
-          description: String(form.get("description") || ""),
-          coverUrl: await imageFromForm(form, "coverFile", "coverUrl", (await prisma.album.findUnique({ where: { id } }))?.coverUrl),
-          pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
-          published: form.get("published") === "on",
-        },
-      });
-    }
-    revalidatePath("/admin/albums");
-    revalidatePath("/albums");
-    revalidatePath("/");
-  }
-
+  await requirePermission("music.manage");
+  const albums = await prisma.album.findMany({ include: { artist: true }, orderBy: { createdAt: "desc" } });
   return (
     <div>
-      <h1 className="font-display text-4xl">Albums</h1>
-      <form action={create} className="mt-6 grid gap-3 rounded-3xl bg-white p-5 md:grid-cols-2">
-        <Field label="Title"><input name="title" required className={inputClass} /></Field>
-        <Field label="Artist">
-          <select name="artistId" className={inputClass}>
-            {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-        </Field>
-        <Field label="Price (PKR)"><input name="price" type="number" className={inputClass} /></Field>
-        <div className="md:col-span-2"><ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" /></div>
-        <div className="md:col-span-2"><Field label="Description"><input name="description" className={inputClass} /></Field></div>
-        <Button type="submit">Create album</Button>
-      </form>
-      <ul className="mt-6 space-y-3">
-        {albums.map((a) => (
-          <li key={a.id} className="rounded-2xl bg-white p-4">
-            <p className="text-sm text-ink/50">{a.artist?.name} · {a.tracks.length} tracks · {formatMoney(a.pricePaisa)}</p>
-            <form action={update} className="mt-3 grid gap-3 md:grid-cols-2">
-              <input type="hidden" name="id" value={a.id} />
-              <Field label="Title"><input name="title" defaultValue={a.title} className={inputClass} /></Field>
-              <Field label="Price (PKR)"><input name="price" type="number" defaultValue={paisaToRupees(a.pricePaisa)} className={inputClass} /></Field>
-              <div className="md:col-span-2">
-                <Field label="Description"><textarea name="description" defaultValue={a.description ?? ""} className={inputClass} /></Field>
-              </div>
-              <div className="md:col-span-2">
-                <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" url={a.coverUrl} />
-              </div>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={a.published} /> Published</label>
-              <div className="flex gap-3">
-                <Button type="submit">Save</Button>
-                <button name="action" value="delete" className="text-sm text-ajrak">Hide album</button>
-              </div>
-            </form>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-4xl">Albums</h1>
+        <Link href="/admin/albums/new" className="rounded-full bg-ajrak px-4 py-2 text-sm text-cream">Add album</Link>
+      </div>
+      <table className="mt-6 w-full text-left text-sm">
+        <thead>
+          <tr className="text-ink/50"><th className="py-2">Cover</th><th>Title</th><th>Artist</th><th>Price</th><th className="text-right">Actions</th></tr>
+        </thead>
+        <tbody>
+          {albums.map((album) => (
+            <tr key={album.id} className="border-t border-ink/10">
+              <td className="py-3">
+                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: album.coverUrl ? `url(${album.coverUrl})` : undefined }} />
+              </td>
+              <td>{album.title}</td>
+              <td>{album.artist?.name}</td>
+              <td>{formatMoney(album.pricePaisa)}</td>
+              <td><RowActions editHref={`/admin/albums/${album.id}`} deleteAction={deleteAlbum} id={album.id} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

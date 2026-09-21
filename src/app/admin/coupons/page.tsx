@@ -1,50 +1,34 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { Field, inputClass, Button } from "@/components/ui/primitives";
-import { revalidatePath } from "next/cache";
+import { RowActions } from "@/components/admin/RowActions";
+import { deleteCoupon } from "@/app/admin/entity-actions";
 
 export default async function AdminCouponsPage() {
   await requirePermission("coupons.manage");
   const coupons = await prisma.coupon.findMany({ orderBy: { createdAt: "desc" } });
-  async function create(form: FormData) {
-    "use server";
-    await requirePermission("coupons.manage");
-    await prisma.coupon.create({
-      data: {
-        code: String(form.get("code")).toUpperCase(),
-        type: String(form.get("type")),
-        value: Number(form.get("value")),
-        minOrderPaisa: Math.round(Number(form.get("minOrder") || 0) * 100),
-        memberOnly: form.get("memberOnly") === "on",
-        firstOrderOnly: form.get("firstOrderOnly") === "on",
-        usageLimit: form.get("usageLimit") ? Number(form.get("usageLimit")) : null,
-        active: true,
-      },
-    });
-    revalidatePath("/admin/coupons");
-  }
   return (
     <div>
-      <h1 className="font-display text-4xl">Coupons</h1>
-      <form action={create} className="mt-6 grid gap-3 rounded-3xl bg-white p-5 md:grid-cols-2">
-        <Field label="Code"><input name="code" required className={inputClass} /></Field>
-        <Field label="Type">
-          <select name="type" className={inputClass}>
-            <option value="percent">Percent</option>
-            <option value="fixed">Fixed (paisa-based rupees)</option>
-          </select>
-        </Field>
-        <Field label="Value"><input name="value" type="number" required className={inputClass} /></Field>
-        <Field label="Min order (PKR)"><input name="minOrder" type="number" className={inputClass} /></Field>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="memberOnly" /> Member only</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="firstOrderOnly" /> First order</label>
-        <Button type="submit">Create coupon</Button>
-      </form>
-      <ul className="mt-6 space-y-2">
-        {coupons.map((c) => (
-          <li key={c.id} className="rounded-2xl bg-white p-4 text-sm">{c.code} · {c.type} {c.value} · {c.active ? "active" : "off"}</li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-4xl">Coupons</h1>
+        <Link href="/admin/coupons/new" className="rounded-full bg-ajrak px-4 py-2 text-sm text-cream">Add coupon</Link>
+      </div>
+      <table className="mt-6 w-full text-left text-sm">
+        <thead>
+          <tr className="text-ink/50"><th className="py-2">Code</th><th>Type</th><th>Value</th><th>Status</th><th className="text-right">Actions</th></tr>
+        </thead>
+        <tbody>
+          {coupons.map((coupon) => (
+            <tr key={coupon.id} className="border-t border-ink/10">
+              <td className="py-3">{coupon.code}</td>
+              <td>{coupon.type}</td>
+              <td>{coupon.value}</td>
+              <td>{coupon.active ? "Active" : "Off"}</td>
+              <td><RowActions editHref={`/admin/coupons/${coupon.id}`} deleteAction={deleteCoupon} id={coupon.id} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

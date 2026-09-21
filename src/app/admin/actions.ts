@@ -3,9 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { audit } from "@/lib/audit";
-import { toSlug } from "@/lib/utils";
+import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
+import { imageFromForm } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { notify } from "@/lib/notifications";
@@ -24,8 +25,9 @@ export async function saveSong(form: FormData) {
   const user = await requirePermission("music.manage");
   await ensureStorage();
   const id = String(form.get("id") || "");
+  const existing = id ? await prisma.song.findUnique({ where: { id } }) : null;
   const title = String(form.get("title") || "");
-  const slug = toSlug(String(form.get("slug") || title));
+  const slug = existing?.slug || toSlug(String(form.get("slug") || title));
   const cover = await fileFromForm(form, "cover");
   const preview = await fileFromForm(form, "preview");
   const audio = await fileFromForm(form, "audio");
@@ -114,7 +116,10 @@ export async function saveSong(form: FormData) {
     published: form.get("published") === "on",
     seoTitle: String(form.get("seoTitle") || "") || null,
     seoDescription: String(form.get("seoDescription") || "") || null,
-    coverUrl: coverUrl || String(form.get("coverUrl") || "") || undefined,
+    coverUrl:
+      coverUrl ||
+      (await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl)) ||
+      undefined,
     ...(previewMediaId ? { previewMediaId } : {}),
     ...(fullAudioMediaId ? { fullAudioMediaId } : {}),
     ...(fullVideoMediaId ? { fullVideoMediaId } : {}),
@@ -132,6 +137,7 @@ export async function saveSong(form: FormData) {
 export async function saveProduct(form: FormData) {
   const user = await requirePermission("products.manage");
   const id = String(form.get("id") || "");
+  const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
   const name = String(form.get("name"));
   const images = [] as string[];
   for (const [key, value] of form.entries()) {
@@ -140,9 +146,18 @@ export async function saveProduct(form: FormData) {
       images.push(await savePublicFile("products", value.name, Buffer.from(await value.arrayBuffer())));
     }
   }
+  const currentImages = parseJson<string[]>(existing?.images, []);
+  const mainImage = await imageFromForm(form, "photoFile", "photoUrl", currentImages[0]);
+  const extraUrls = String(form.get("imageUrls") || "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const nextImages = images.length
+    ? images
+    : [mainImage, ...extraUrls.filter((url) => url !== mainImage)].filter(Boolean) as string[];
   const data = {
     name,
-    slug: toSlug(String(form.get("slug") || name)),
+    slug: existing?.slug || toSlug(String(form.get("slug") || name)),
     nameSd: String(form.get("nameSd") || "") || null,
     sku: String(form.get("sku")),
     categoryId: String(form.get("categoryId")),
@@ -155,18 +170,7 @@ export async function saveProduct(form: FormData) {
     shippingInfo: String(form.get("shippingInfo") || "") || null,
     status: String(form.get("status") || "draft"),
     featured: form.get("featured") === "on",
-    ...(images.length
-      ? { images: JSON.stringify(images) }
-      : String(form.get("imageUrls") || "").trim()
-        ? {
-            images: JSON.stringify(
-              String(form.get("imageUrls"))
-                .split("\n")
-                .map((s) => s.trim())
-                .filter(Boolean),
-            ),
-          }
-        : {}),
+    ...(nextImages.length ? { images: JSON.stringify(nextImages) } : {}),
   };
   const product = id
     ? await prisma.product.update({ where: { id }, data })

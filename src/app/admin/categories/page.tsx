@@ -1,78 +1,36 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { toSlug } from "@/lib/utils";
-import { Field, inputClass, Button } from "@/components/ui/primitives";
-import { revalidatePath } from "next/cache";
+import { RowActions } from "@/components/admin/RowActions";
+import { deleteCategory } from "@/app/admin/entity-actions";
 
 export default async function AdminCategoriesPage() {
   await requirePermission("products.manage");
-  const categories = await prisma.productCategory.findMany({ include: { parent: true, children: true } });
-  async function create(form: FormData) {
-    "use server";
-    const name = String(form.get("name"));
-    await prisma.productCategory.create({
-      data: {
-        name,
-        slug: toSlug(name),
-        parentId: String(form.get("parentId") || "") || null,
-        published: true,
-      },
-    });
-    revalidatePath("/admin/categories");
-    revalidatePath("/shop");
-  }
-  async function update(form: FormData) {
-    "use server";
-    await requirePermission("products.manage");
-    const id = String(form.get("id"));
-    if (form.get("action") === "delete") {
-      await prisma.productCategory.update({ where: { id }, data: { published: false } });
-    } else {
-      await prisma.productCategory.update({
-        where: { id },
-        data: {
-          name: String(form.get("name")),
-          description: String(form.get("description") || "") || null,
-          imageUrl: String(form.get("imageUrl") || "") || null,
-          published: form.get("published") === "on",
-        },
-      });
-    }
-    revalidatePath("/admin/categories");
-    revalidatePath("/shop");
-  }
+  const categories = await prisma.productCategory.findMany({ include: { parent: true }, orderBy: { name: "asc" } });
   return (
     <div>
-      <h1 className="font-display text-4xl">Categories</h1>
-      <form action={create} className="mt-6 space-y-3 rounded-3xl bg-white p-5">
-        <Field label="Name"><input name="name" required className={inputClass} /></Field>
-        <Field label="Parent">
-          <select name="parentId" className={inputClass}>
-            <option value="">None</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </Field>
-        <Button type="submit">Add category</Button>
-      </form>
-      <ul className="mt-6 space-y-3">
-        {categories.map((c) => (
-          <li key={c.id} className="rounded-2xl bg-white p-4 text-sm">
-            <form action={update} className="grid gap-3 md:grid-cols-2">
-              <input type="hidden" name="id" value={c.id} />
-              <Field label="Name"><input name="name" defaultValue={c.name} className={inputClass} /></Field>
-              <Field label="Image URL"><input name="imageUrl" defaultValue={c.imageUrl ?? ""} className={inputClass} /></Field>
-              <div className="md:col-span-2">
-                <Field label="Description"><textarea name="description" defaultValue={c.description ?? ""} className={inputClass} /></Field>
-              </div>
-              <label className="flex items-center gap-2"><input type="checkbox" name="published" defaultChecked={c.published} /> Published</label>
-              <div className="flex gap-3">
-                <Button type="submit">Save</Button>
-                <button name="action" value="delete" className="text-ajrak">Hide</button>
-              </div>
-            </form>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-4xl">Categories</h1>
+        <Link href="/admin/categories/new" className="rounded-full bg-ajrak px-4 py-2 text-sm text-cream">Add category</Link>
+      </div>
+      <table className="mt-6 w-full text-left text-sm">
+        <thead>
+          <tr className="text-ink/50"><th className="py-2">Picture</th><th>Name</th><th>Parent</th><th>Status</th><th className="text-right">Actions</th></tr>
+        </thead>
+        <tbody>
+          {categories.map((category) => (
+            <tr key={category.id} className="border-t border-ink/10">
+              <td className="py-3">
+                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: category.imageUrl ? `url(${category.imageUrl})` : undefined }} />
+              </td>
+              <td>{category.name}</td>
+              <td>{category.parent?.name ?? "—"}</td>
+              <td>{category.published ? "Published" : "Hidden"}</td>
+              <td><RowActions editHref={`/admin/categories/${category.id}`} deleteAction={deleteCategory} id={category.id} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

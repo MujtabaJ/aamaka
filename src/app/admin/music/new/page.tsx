@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { saveSong } from "@/app/admin/actions";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
+import { PicturePicker } from "@/components/admin/PicturePicker";
 
 export default async function NewSongPage() {
   await requirePermission("music.manage");
@@ -12,7 +14,8 @@ export default async function NewSongPage() {
   ]);
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-4xl">Add song</h1>
+      <Link href="/admin/music" className="text-sm text-ajrak">Back to music</Link>
+      <h1 className="mt-3 font-display text-4xl">Add song</h1>
       <form action={saveSong} className="mt-8 space-y-8">
         <section className="rounded-3xl bg-white p-6">
           <h2 className="font-display text-2xl">Song information</h2>
@@ -44,8 +47,7 @@ export default async function NewSongPage() {
         <section className="rounded-3xl bg-white p-6">
           <h2 className="font-display text-2xl">Media</h2>
           <div className="mt-4 grid gap-4">
-            <Field label="Cover image URL"><input name="coverUrl" className={inputClass} /></Field>
-            <Field label="Cover image upload"><input name="cover" type="file" accept="image/*" /></Field>
+            <PicturePicker label="Cover picture" fileName="coverFile" urlName="coverUrl" />
             <Field label="Preview audio"><input name="preview" type="file" accept="audio/*" /></Field>
             <Field label="Full audio"><input name="audio" type="file" accept="audio/*" /></Field>
             <Field label="Video"><input name="video" type="file" accept="video/*" /></Field>

@@ -1,88 +1,35 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { toSlug } from "@/lib/utils";
-import { Field, inputClass, Button } from "@/components/ui/primitives";
-import { ImageFields } from "@/components/admin/ImageFields";
-import { imageFromForm } from "@/lib/admin-images";
-import { revalidatePath } from "next/cache";
+import { RowActions } from "@/components/admin/RowActions";
+import { deleteArticle } from "@/app/admin/entity-actions";
 
 export default async function AdminArticlesPage() {
-  const user = await requirePermission("content.manage");
+  await requirePermission("content.manage");
   const articles = await prisma.article.findMany({ orderBy: { createdAt: "desc" } });
-
-  async function create(form: FormData) {
-    "use server";
-    await requirePermission("content.manage");
-    const title = String(form.get("title"));
-    await prisma.article.create({
-      data: {
-        title,
-        slug: toSlug(title),
-        excerpt: String(form.get("excerpt") || ""),
-        body: String(form.get("body") || ""),
-        coverUrl: await imageFromForm(form, "coverFile", "coverUrl"),
-        authorId: user.id,
-        authorName: user.name ?? "AA Maka Production",
-        published: form.get("published") === "on",
-        publishedAt: new Date(),
-      },
-    });
-    revalidatePath("/admin/articles");
-    revalidatePath("/stories");
-  }
-
-  async function update(form: FormData) {
-    "use server";
-    await requirePermission("content.manage");
-    const id = String(form.get("id"));
-    if (form.get("action") === "delete") {
-      await prisma.article.delete({ where: { id } });
-    } else {
-      await prisma.article.update({
-        where: { id },
-        data: {
-          title: String(form.get("title")),
-          excerpt: String(form.get("excerpt") || ""),
-          body: String(form.get("body") || ""),
-          coverUrl: await imageFromForm(form, "coverFile", "coverUrl", (await prisma.article.findUnique({ where: { id } }))?.coverUrl),
-          published: form.get("published") === "on",
-        },
-      });
-    }
-    revalidatePath("/admin/articles");
-    revalidatePath("/stories");
-    revalidatePath("/");
-  }
-
   return (
     <div>
-      <h1 className="font-display text-4xl">Articles</h1>
-      <form action={create} className="mt-6 space-y-3 rounded-3xl bg-white p-5">
-        <Field label="Title"><input name="title" required className={inputClass} /></Field>
-        <Field label="Excerpt"><input name="excerpt" className={inputClass} /></Field>
-        <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" />
-        <Field label="Body (Markdown)"><textarea name="body" rows={8} className={inputClass} /></Field>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked /> Publish</label>
-        <Button type="submit">Create article</Button>
-      </form>
-      <ul className="mt-6 space-y-3">
-        {articles.map((a) => (
-          <li key={a.id} className="rounded-2xl bg-white p-4">
-            <form action={update} className="space-y-3">
-              <input type="hidden" name="id" value={a.id} />
-              <Field label="Title"><input name="title" defaultValue={a.title} className={inputClass} /></Field>
-              <Field label="Excerpt"><input name="excerpt" defaultValue={a.excerpt} className={inputClass} /></Field>
-              <ImageFields label="Cover" urlName="coverUrl" fileName="coverFile" url={a.coverUrl} />
-              <Field label="Body"><textarea name="body" rows={6} defaultValue={a.body} className={inputClass} /></Field>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={a.published} /> Published</label>
-              <div className="flex gap-3">
-                <Button type="submit">Save</Button>
-                <button name="action" value="delete" className="text-sm text-ajrak">Delete</button>
-              </div>
-            </form>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-4xl">Articles</h1>
+        <Link href="/admin/articles/new" className="rounded-full bg-ajrak px-4 py-2 text-sm text-cream">Add article</Link>
+      </div>
+      <table className="mt-6 w-full text-left text-sm">
+        <thead>
+          <tr className="text-ink/50"><th className="py-2">Picture</th><th>Title</th><th>Status</th><th className="text-right">Actions</th></tr>
+        </thead>
+        <tbody>
+          {articles.map((article) => (
+            <tr key={article.id} className="border-t border-ink/10">
+              <td className="py-3">
+                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: article.coverUrl ? `url(${article.coverUrl})` : undefined }} />
+              </td>
+              <td>{article.title}</td>
+              <td>{article.published ? "Published" : "Draft"}</td>
+              <td><RowActions editHref={`/admin/articles/${article.id}`} deleteAction={deleteArticle} id={article.id} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
