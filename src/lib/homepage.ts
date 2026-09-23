@@ -1,4 +1,3 @@
-import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseJson } from "@/lib/utils";
 import { photos } from "@/lib/photos";
@@ -193,7 +192,6 @@ function mergeSections(saved: HomepageSection[] | undefined): HomepageSection[] 
 }
 
 export async function getHomepageSections(): Promise<HomepageSection[]> {
-  noStore();
   try {
     const row = await prisma.siteSetting.findUnique({ where: { key: "homepage" } });
     const parsed = parseJson<{ sections?: HomepageSection[] }>(row?.value, {});

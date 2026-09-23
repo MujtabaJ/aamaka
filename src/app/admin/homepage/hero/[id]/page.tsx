@@ -16,7 +16,7 @@ export default async function EditHeroPage({ params }: { params: Promise<{ id: s
     <div className="max-w-3xl">
       <Link href="/admin/homepage" className="text-sm text-ajrak">Back to homepage</Link>
       <h1 className="mt-3 font-display text-4xl">Edit hero</h1>
-      <form action={saveHero} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveHero} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={hero.id} />
         <PicturePicker spec="hero" label="Hero picture" current={hero.imageUrl} />
         <Field label="Kicker"><input name="kicker" defaultValue={hero.kicker} className={inputClass} /></Field>

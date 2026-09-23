@@ -15,8 +15,12 @@ const PUBLIC_PATHS = [
 ];
 
 export function revalidateSite() {
-  revalidatePath("/", "layout");
-  for (const path of PUBLIC_PATHS) {
-    revalidatePath(path);
+  try {
+    revalidatePath("/", "layout");
+    for (const path of PUBLIC_PATHS) {
+      revalidatePath(path);
+    }
+  } catch {
+    /* a cache miss must not fail an admin save */
   }
 }

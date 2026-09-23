@@ -8,7 +8,7 @@ import { rupeesToPaisa } from "@/lib/money";
 import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
 import { imageFromForm, withCacheBust } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
-import { revalidateSite } from "@/lib/revalidate-site";
+import { finishSave } from "@/lib/admin-save";
 import { redirect } from "next/navigation";
 import { notify } from "@/lib/notifications";
 import { fulfillOrder } from "@/lib/orders";
@@ -131,9 +131,7 @@ export async function saveSong(form: FormData) {
     : await prisma.song.create({ data });
 
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: song.id });
-  revalidatePath("/admin/music");
-  revalidateSite();
-  redirect("/admin/music");
+  finishSave("/admin/music");
 }
 
 export async function saveProduct(form: FormData) {
@@ -181,9 +179,7 @@ export async function saveProduct(form: FormData) {
     ? await prisma.product.update({ where: { id }, data })
     : await prisma.product.create({ data });
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: product.id });
-  revalidatePath("/admin/products");
-  revalidateSite();
-  redirect("/admin/products");
+  finishSave("/admin/products");
 }
 
 export async function updateOrderStatus(form: FormData) {
@@ -218,9 +214,7 @@ export async function deleteSong(form: FormData) {
   const id = String(form.get("id"));
   await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
   await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
-  revalidatePath("/admin/music");
-  revalidateSite();
-  redirect("/admin/music");
+  finishSave("/admin/music");
 }
 
 export async function deleteProduct(form: FormData) {
@@ -228,7 +222,5 @@ export async function deleteProduct(form: FormData) {
   const id = String(form.get("id"));
   await prisma.product.update({ where: { id }, data: { status: "archived" } });
   await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
-  revalidatePath("/admin/products");
-  revalidateSite();
-  redirect("/admin/products");
+  finishSave("/admin/products");
 }

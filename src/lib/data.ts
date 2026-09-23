@@ -1,4 +1,3 @@
-import { unstable_noStore as noStore } from "next/cache";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
@@ -12,7 +11,6 @@ export async function getPublishedSongFilters() {
 }
 
 export async function getHomeData() {
-  noStore();
   const [heroes, announcement, songs, exclusive, albums, products, books, artists, articles, plans, genres] =
     await Promise.all([
       prisma.homepageHero.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),

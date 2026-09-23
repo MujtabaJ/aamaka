@@ -3,6 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { IMAGE_SPECS, recommendedLine, type ImageSpecKey } from "@/lib/image-specs";
 
+async function fitImage(file: File, maxWidth: number, maxHeight: number) {
+  const bitmap = await createImageBitmap(file);
+  let width = bitmap.width;
+  let height = bitmap.height;
+  if (width > maxWidth || height > maxHeight) {
+    const ratio = Math.min(maxWidth / width, maxHeight / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+  context.drawImage(bitmap, 0, 0, width, height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+  if (!blob) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+}
+
+function assignFile(input: HTMLInputElement, file: File) {
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  input.files = transfer.files;
+}
+
 export function PicturePicker({
   fileName = "photoFile",
   urlName = "photoUrl",
@@ -56,11 +82,19 @@ export function PicturePicker({
         name={fileName}
         accept="image/*"
         className="sr-only"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
+        onChange={async (event) => {
+          const input = event.target;
+          const file = input.files?.[0];
           if (!file) return;
-          setChosen(file.name);
-          setPreview(URL.createObjectURL(file));
+          try {
+            const fitted = await fitImage(file, guide.width, guide.height);
+            assignFile(input, fitted);
+            setChosen(fitted.name);
+            setPreview(URL.createObjectURL(fitted));
+          } catch {
+            setChosen(file.name);
+            setPreview(URL.createObjectURL(file));
+          }
         }}
       />
       <button
