@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteArticle } from "@/app/admin/entity-actions";
 
 export default async function AdminArticlesPage() {
@@ -21,7 +22,7 @@ export default async function AdminArticlesPage() {
           {articles.map((article) => (
             <tr key={article.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: article.coverUrl ? `url(${article.coverUrl})` : undefined }} />
+                <AdminThumb src={article.coverUrl} spec="article" />
               </td>
               <td>{article.title}</td>
               <td>{article.published ? "Published" : "Draft"}</td>

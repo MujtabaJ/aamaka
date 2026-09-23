@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/seo";
 import { formatDate } from "@/lib/utils";
 import { getHomepageSection } from "@/lib/homepage";
 import { PageHero } from "@/components/content/PageHero";
+import { freshSrc } from "@/lib/image-specs";
 
 export const metadata = pageMeta({
   title: "Cultural stories",
@@ -26,7 +27,7 @@ export default async function StoriesPage() {
         {articles.map((article) => (
           <Link key={article.id} href={`/stories/${article.slug}`} className="overflow-hidden rounded-3xl bg-white shadow-soft">
             {article.coverUrl ? (
-              <div className="h-44 bg-cover bg-center" style={{ backgroundImage: `url(${article.coverUrl})` }} />
+              <div className="h-44 bg-cover bg-center" style={{ backgroundImage: `url(${freshSrc(article.coverUrl, article.updatedAt)})` }} />
             ) : null}
             <div className="p-6">
               <p className="text-xs uppercase tracking-[0.16em] text-gold">{formatDate(article.publishedAt)}</p>

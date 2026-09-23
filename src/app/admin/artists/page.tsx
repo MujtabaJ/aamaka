@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteArtist } from "@/app/admin/entity-actions";
 
 export default async function AdminArtistsPage() {
@@ -29,7 +30,7 @@ export default async function AdminArtistsPage() {
           {artists.map((artist) => (
             <tr key={artist.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: artist.photoUrl ? `url(${artist.photoUrl})` : undefined }} />
+                <AdminThumb src={artist.photoUrl} spec="artistPhoto" />
               </td>
               <td>
                 <p className="font-medium">{artist.name}</p>

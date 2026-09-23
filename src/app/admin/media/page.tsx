@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
+import { ImageSizeHint } from "@/components/admin/ImageSizeHint";
+import { revalidateSite } from "@/lib/revalidate-site";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminMediaPage() {
@@ -34,6 +36,7 @@ export default async function AdminMediaPage() {
       },
     });
     revalidatePath("/admin/media");
+    revalidateSite();
   }
 
   return (
@@ -45,6 +48,7 @@ export default async function AdminMediaPage() {
       <form action={upload} className="mt-6 grid gap-3 rounded-3xl bg-white p-5 md:grid-cols-2">
         <Field label="File">
           <input name="file" type="file" required accept="image/*,audio/*,video/*" />
+          <ImageSizeHint spec="section" />
         </Field>
         <Field label="Kind">
           <select name="kind" className={inputClass}>

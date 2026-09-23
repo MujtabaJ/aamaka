@@ -18,7 +18,7 @@ export default async function EditBookPage({ params }: { params: Promise<{ id: s
       <h1 className="mt-3 font-display text-4xl">Edit {book.title}</h1>
       <form action={saveBook} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={book.id} />
-        <PicturePicker label="Book cover" fileName="coverFile" urlName="coverUrl" current={book.coverUrl} />
+        <PicturePicker spec="book" label="Book cover" fileName="coverFile" urlName="coverUrl" current={book.coverUrl} />
         <Field label="Title"><input name="title" defaultValue={book.title} required className={inputClass} /></Field>
         <Field label="Sindhi title"><input name="titleSd" defaultValue={book.titleSd ?? ""} className={inputClass} /></Field>
         <Field label="Author"><input name="author" defaultValue={book.author} required className={inputClass} /></Field>

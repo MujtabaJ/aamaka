@@ -5,6 +5,7 @@ import { formatMoney, effectivePrice } from "@/lib/money";
 import { Button } from "@/components/ui/primitives";
 import { PlayButton } from "@/components/music/PlayButton";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -45,7 +46,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
         })}
       />
       <div className="grid gap-10 md:grid-cols-[280px_1fr]">
-        <div className="aspect-square rounded-3xl bg-cover bg-center" style={{ backgroundImage: album.coverUrl ? `url(${album.coverUrl})` : undefined }} />
+        <div className="aspect-square rounded-3xl bg-cover bg-center" style={{ backgroundImage: album.coverUrl ? `url(${freshSrc(album.coverUrl, album.updatedAt)})` : undefined }} />
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-ajrak">{album.genre?.name || "Album"}</p>
           <h1 className="mt-2 font-display text-5xl">{album.title}</h1>

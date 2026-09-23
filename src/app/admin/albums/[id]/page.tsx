@@ -20,7 +20,7 @@ export default async function EditAlbumPage({ params }: { params: Promise<{ id: 
       <h1 className="mt-3 font-display text-4xl">Edit {album.title}</h1>
       <form action={saveAlbum} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={album.id} />
-        <PicturePicker label="Album cover" fileName="coverFile" urlName="coverUrl" current={album.coverUrl} />
+        <PicturePicker spec="album" label="Album cover" fileName="coverFile" urlName="coverUrl" current={album.coverUrl} />
         <Field label="Title"><input name="title" defaultValue={album.title} required className={inputClass} /></Field>
         <Field label="Artist">
           <select name="artistId" defaultValue={album.artistId ?? ""} className={inputClass}>

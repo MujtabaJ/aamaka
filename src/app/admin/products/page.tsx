@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/session";
 import { formatMoney } from "@/lib/money";
 import { parseJson } from "@/lib/utils";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteProduct } from "@/app/admin/actions";
 
 export default async function AdminProductsPage() {
@@ -32,7 +33,7 @@ export default async function AdminProductsPage() {
             return (
               <tr key={product.id} className="border-t border-ink/10">
                 <td className="py-3">
-                  <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: image ? `url(${image})` : undefined }} />
+                  <AdminThumb src={image} spec="product" />
                 </td>
                 <td>{product.name}</td>
                 <td>{product.sku}</td>

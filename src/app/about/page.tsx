@@ -3,6 +3,7 @@ import { pageMeta } from "@/lib/seo";
 import { getSettings } from "@/lib/settings";
 import { Button } from "@/components/ui/primitives";
 import { getHomepageSection } from "@/lib/homepage";
+import { freshSrc } from "@/lib/image-specs";
 
 export const metadata = pageMeta({
   title: "About AA Maka Production",
@@ -21,7 +22,7 @@ export default async function AboutPage() {
       {section?.imageUrl ? (
         <div
           className="relative mb-10 h-56 overflow-hidden rounded-3xl bg-ink bg-cover bg-center md:h-72"
-          style={{ backgroundImage: `url(${section.imageUrl})` }}
+          style={{ backgroundImage: `url(${freshSrc(section.imageUrl)})` }}
         >
           <div className="cinema-scrim absolute inset-0" />
         </div>

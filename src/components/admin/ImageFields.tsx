@@ -1,15 +1,19 @@
 import { Field, inputClass } from "@/components/ui/primitives";
+import { ImageSizeHint } from "@/components/admin/ImageSizeHint";
+import type { ImageSpecKey } from "@/lib/image-specs";
 
 export function ImageFields({
   label,
   urlName,
   fileName,
   url,
+  spec = "section",
 }: {
   label: string;
   urlName: string;
   fileName: string;
   url?: string | null;
+  spec?: ImageSpecKey;
 }) {
   return (
     <div className="space-y-2">
@@ -24,6 +28,7 @@ export function ImageFields({
           No picture
         </div>
       )}
+      <ImageSizeHint spec={spec} />
       <Field label={`${label} URL`}>
         <input name={urlName} defaultValue={url ?? ""} className={inputClass} placeholder="https://..." />
       </Field>

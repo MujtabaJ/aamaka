@@ -13,7 +13,7 @@ export default async function NewAlbumPage() {
       <Link href="/admin/albums" className="text-sm text-ajrak">Back to albums</Link>
       <h1 className="mt-3 font-display text-4xl">Add album</h1>
       <form action={saveAlbum} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
-        <PicturePicker label="Album cover" fileName="coverFile" urlName="coverUrl" />
+        <PicturePicker spec="album" label="Album cover" fileName="coverFile" urlName="coverUrl" />
         <Field label="Title"><input name="title" required className={inputClass} /></Field>
         <Field label="Artist">
           <select name="artistId" className={inputClass}>

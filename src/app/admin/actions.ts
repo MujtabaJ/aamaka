@@ -6,8 +6,9 @@ import { audit } from "@/lib/audit";
 import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
-import { imageFromForm } from "@/lib/admin-images";
+import { imageFromForm, withCacheBust } from "@/lib/admin-images";
 import { revalidatePath } from "next/cache";
+import { revalidateSite } from "@/lib/revalidate-site";
 import { redirect } from "next/navigation";
 import { notify } from "@/lib/notifications";
 import { fulfillOrder } from "@/lib/orders";
@@ -40,7 +41,7 @@ export async function saveSong(form: FormData) {
 
   if (cover) {
     validateUpload("image", cover.file.type, cover.file.size);
-    coverUrl = await savePublicFile("covers", cover.file.name, cover.buffer);
+    coverUrl = withCacheBust(await savePublicFile("covers", cover.file.name, cover.buffer));
   }
   if (preview) {
     validateUpload("audio", preview.file.type, preview.file.size);
@@ -131,6 +132,7 @@ export async function saveSong(form: FormData) {
 
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: song.id });
   revalidatePath("/admin/music");
+  revalidateSite();
   redirect("/admin/music");
 }
 
@@ -143,7 +145,9 @@ export async function saveProduct(form: FormData) {
   for (const [key, value] of form.entries()) {
     if (key === "images" && value instanceof File && value.size) {
       validateUpload("image", value.type, value.size);
-      images.push(await savePublicFile("products", value.name, Buffer.from(await value.arrayBuffer())));
+      images.push(
+        withCacheBust(await savePublicFile("products", value.name, Buffer.from(await value.arrayBuffer()))),
+      );
     }
   }
   const currentImages = parseJson<string[]>(existing?.images, []);
@@ -151,7 +155,8 @@ export async function saveProduct(form: FormData) {
   const extraUrls = String(form.get("imageUrls") || "")
     .split("\n")
     .map((s) => s.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((url) => withCacheBust(url));
   const nextImages = images.length
     ? images
     : [mainImage, ...extraUrls.filter((url) => url !== mainImage)].filter(Boolean) as string[];
@@ -177,6 +182,7 @@ export async function saveProduct(form: FormData) {
     : await prisma.product.create({ data });
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: product.id });
   revalidatePath("/admin/products");
+  revalidateSite();
   redirect("/admin/products");
 }
 
@@ -213,7 +219,7 @@ export async function deleteSong(form: FormData) {
   await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
   await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
   revalidatePath("/admin/music");
-  revalidatePath("/music");
+  revalidateSite();
   redirect("/admin/music");
 }
 
@@ -223,6 +229,6 @@ export async function deleteProduct(form: FormData) {
   await prisma.product.update({ where: { id }, data: { status: "archived" } });
   await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
   revalidatePath("/admin/products");
-  revalidatePath("/shop");
+  revalidateSite();
   redirect("/admin/products");
 }

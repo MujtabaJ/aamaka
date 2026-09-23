@@ -7,6 +7,7 @@ import { Badge, Button, Field, inputClass } from "@/components/ui/primitives";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ReviewForm } from "@/components/shop/ReviewForm";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -63,10 +64,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       />
       <div className="grid gap-10 md:grid-cols-2">
         <div className="space-y-3">
-          <div className="aspect-[4/5] rounded-3xl bg-sand bg-cover bg-center" style={{ backgroundImage: images[0] ? `url(${images[0]})` : undefined }} />
+          <div className="aspect-[4/5] rounded-3xl bg-sand bg-cover bg-center" style={{ backgroundImage: images[0] ? `url(${freshSrc(images[0], product.updatedAt)})` : undefined }} />
           <div className="grid grid-cols-4 gap-2">
             {images.slice(1, 5).map((img) => (
-              <div key={img} className="aspect-square rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url(${img})` }} />
+              <div key={img} className="aspect-square rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url(${freshSrc(img, product.updatedAt)})` }} />
             ))}
           </div>
         </div>

@@ -1,33 +1,55 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { IMAGE_SPECS, recommendedLine, type ImageSpecKey } from "@/lib/image-specs";
 
 export function PicturePicker({
   fileName = "photoFile",
   urlName = "photoUrl",
   current,
   label = "Picture",
+  spec = "section",
 }: {
   fileName?: string;
   urlName?: string;
   current?: string | null;
   label?: string;
+  spec?: ImageSpecKey;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(current || "");
   const [chosen, setChosen] = useState("");
+  const [currentSize, setCurrentSize] = useState<string | null>(null);
+  const guide = IMAGE_SPECS[spec];
+
+  useEffect(() => {
+    if (!preview) {
+      setCurrentSize(null);
+      return;
+    }
+    const image = new window.Image();
+    image.onload = () => {
+      setCurrentSize(`Current file: ${image.naturalWidth} × ${image.naturalHeight} px`);
+    };
+    image.onerror = () => setCurrentSize(null);
+    image.src = preview;
+  }, [preview]);
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-ink/70">{label}</p>
       <div
-        className="h-52 w-52 rounded-3xl bg-ink/10 bg-cover bg-center"
+        className={`${guide.previewClass} bg-ink/10 bg-cover bg-center`}
         style={{ backgroundImage: preview ? `url(${preview})` : undefined }}
       >
         {!preview ? (
           <div className="flex h-full items-center justify-center text-sm text-ink/40">No picture</div>
         ) : null}
       </div>
+      <p className="text-[11px] font-medium leading-snug text-red-600">
+        {recommendedLine(spec)}
+        {currentSize ? <span className="block">{currentSize}</span> : null}
+      </p>
       <input
         ref={inputRef}
         type="file"

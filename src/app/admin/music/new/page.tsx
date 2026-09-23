@@ -47,7 +47,7 @@ export default async function NewSongPage() {
         <section className="rounded-3xl bg-white p-6">
           <h2 className="font-display text-2xl">Media</h2>
           <div className="mt-4 grid gap-4">
-            <PicturePicker label="Cover picture" fileName="coverFile" urlName="coverUrl" />
+            <PicturePicker spec="song" label="Cover picture" fileName="coverFile" urlName="coverUrl" />
             <Field label="Preview audio"><input name="preview" type="file" accept="audio/*" /></Field>
             <Field label="Full audio"><input name="audio" type="file" accept="audio/*" /></Field>
             <Field label="Video"><input name="video" type="file" accept="video/*" /></Field>

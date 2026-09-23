@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatMoney, effectivePrice, salePercent } from "@/lib/money";
 import { parseJson } from "@/lib/utils";
 import { Badge } from "@/components/ui/primitives";
+import { freshSrc } from "@/lib/image-specs";
 
 export function ProductCard({
   product,
@@ -10,6 +11,7 @@ export function ProductCard({
     slug: string;
     name: string;
     images: string;
+    updatedAt?: Date | string | null;
     pricePaisa: number;
     salePricePaisa?: number | null;
     stock: number;
@@ -21,7 +23,7 @@ export function ProductCard({
   const off = salePercent(product.pricePaisa, product.salePricePaisa);
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-soft">
-      <Link href={`/shop/${product.slug}`} className="block aspect-[4/5] bg-sand bg-cover bg-center" style={{ backgroundImage: image ? `url(${image})` : undefined }} />
+      <Link href={`/shop/${product.slug}`} className="block aspect-[4/5] bg-sand bg-cover bg-center" style={{ backgroundImage: image ? `url(${freshSrc(image, product.updatedAt)})` : undefined }} />
       <div className="space-y-1 p-4">
         {product.category ? (
           <p className="text-[11px] uppercase tracking-[0.18em] text-ajrak">{product.category.name}</p>

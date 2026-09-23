@@ -11,6 +11,7 @@ import { ArtistCard } from "@/components/music/ArtistCard";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { BookCard } from "@/components/books/BookCard";
 import { formatMoney } from "@/lib/money";
+import { freshSrc } from "@/lib/image-specs";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -83,7 +84,7 @@ export default async function HomePage() {
               <Link key={song.id} href={`/music/song/${song.slug}`} className="overflow-hidden rounded-3xl border border-cream/10">
                 <div
                   className="h-40 bg-cover bg-center"
-                  style={{ backgroundImage: song.coverUrl ? `url(${song.coverUrl})` : undefined }}
+                  style={{ backgroundImage: song.coverUrl ? `url(${freshSrc(song.coverUrl, song.updatedAt)})` : undefined }}
                 />
                 <div className="p-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-gold">Member only</p>
@@ -173,7 +174,7 @@ export default async function HomePage() {
             {data.articles.map((article) => (
               <Link key={article.id} href={`/stories/${article.slug}`} className="overflow-hidden rounded-3xl bg-white shadow-soft">
                 {article.coverUrl ? (
-                  <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${article.coverUrl})` }} />
+                  <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${freshSrc(article.coverUrl, article.updatedAt)})` }} />
                 ) : null}
                 <div className="p-6">
                   <p className="text-xs uppercase tracking-[0.16em] text-gold">Cultural story</p>
@@ -192,7 +193,7 @@ export default async function HomePage() {
         {section.imageUrl ? (
           <div
             className="absolute inset-0 bg-cover bg-center opacity-35"
-            style={{ backgroundImage: `url(${section.imageUrl})` }}
+            style={{ backgroundImage: `url(${freshSrc(section.imageUrl)})` }}
           />
         ) : null}
         <div className="ajrak-motif absolute inset-0 opacity-30" />
@@ -229,7 +230,7 @@ export default async function HomePage() {
       <section className="relative min-h-[88vh] overflow-hidden bg-ink text-cream">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-70"
-          style={{ backgroundImage: `url(${hero?.imageUrl || "/media/covers/hero.svg"})` }}
+          style={{ backgroundImage: `url(${freshSrc(hero?.imageUrl, hero?.updatedAt) || "/media/covers/hero.svg"})` }}
         />
         <div className="cinema-scrim absolute inset-0" />
         <div className="relative mx-auto flex min-h-[88vh] max-w-page flex-col justify-end px-4 pb-16 pt-28 md:px-6 md:pb-24">

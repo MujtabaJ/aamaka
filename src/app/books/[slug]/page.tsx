@@ -5,6 +5,7 @@ import { formatMoney, effectivePrice, salePercent } from "@/lib/money";
 import { Badge, Button, Field, inputClass } from "@/components/ui/primitives";
 import { BookCard } from "@/components/books/BookCard";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -57,7 +58,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
       <div className="grid gap-10 md:grid-cols-[280px_1fr]">
         <div
           className="aspect-[3/4] rounded-3xl bg-sand bg-cover bg-center shadow-soft"
-          style={{ backgroundImage: book.coverUrl ? `url(${book.coverUrl})` : undefined }}
+          style={{ backgroundImage: book.coverUrl ? `url(${freshSrc(book.coverUrl, book.updatedAt)})` : undefined }}
         />
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-ajrak">

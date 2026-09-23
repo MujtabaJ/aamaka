@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatMoney, effectivePrice, salePercent } from "@/lib/money";
 import { Badge, Button } from "@/components/ui/primitives";
+import { freshSrc } from "@/lib/image-specs";
 
 export function AlbumCard({
   album,
@@ -9,6 +10,7 @@ export function AlbumCard({
     slug: string;
     title: string;
     coverUrl?: string | null;
+    updatedAt?: Date | string | null;
     pricePaisa: number;
     salePricePaisa?: number | null;
     artist?: { name: string } | null;
@@ -21,7 +23,7 @@ export function AlbumCard({
     <article className="overflow-hidden rounded-3xl bg-ink text-cream shadow-soft">
       <div
         className="aspect-square bg-cover bg-center"
-        style={{ backgroundImage: album.coverUrl ? `url(${album.coverUrl})` : undefined }}
+        style={{ backgroundImage: album.coverUrl ? `url(${freshSrc(album.coverUrl, album.updatedAt)})` : undefined }}
       />
       <div className="space-y-2 p-5">
         <Link href={`/music/album/${album.slug}`} className="font-display text-2xl">

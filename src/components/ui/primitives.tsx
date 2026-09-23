@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { freshSrc } from "@/lib/image-specs";
 
 export function Button({
   href,
@@ -85,7 +86,7 @@ export function Section({
         {imageUrl ? (
           <div
             className="mb-8 h-40 overflow-hidden rounded-3xl bg-cover bg-center md:h-52"
-            style={{ backgroundImage: `url(${imageUrl})` }}
+            style={{ backgroundImage: `url(${freshSrc(imageUrl)})` }}
           />
         ) : null}
         {(title || eyebrow) && (

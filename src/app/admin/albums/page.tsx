@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { formatMoney } from "@/lib/money";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteAlbum } from "@/app/admin/entity-actions";
 
 export default async function AdminAlbumsPage() {
@@ -22,7 +23,7 @@ export default async function AdminAlbumsPage() {
           {albums.map((album) => (
             <tr key={album.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: album.coverUrl ? `url(${album.coverUrl})` : undefined }} />
+                <AdminThumb src={album.coverUrl} spec="album" />
               </td>
               <td>{album.title}</td>
               <td>{album.artist?.name}</td>

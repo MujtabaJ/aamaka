@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatMoney, effectivePrice, salePercent } from "@/lib/money";
 import { Badge } from "@/components/ui/primitives";
+import { freshSrc } from "@/lib/image-specs";
 
 export function BookCard({
   book,
@@ -10,6 +11,7 @@ export function BookCard({
     title: string;
     author: string;
     coverUrl?: string | null;
+    updatedAt?: Date | string | null;
     category?: string | null;
     format?: string | null;
     pricePaisa: number;
@@ -24,7 +26,7 @@ export function BookCard({
       <Link
         href={`/books/${book.slug}`}
         className="block aspect-[3/4] bg-sand bg-cover bg-center"
-        style={{ backgroundImage: book.coverUrl ? `url(${book.coverUrl})` : undefined }}
+        style={{ backgroundImage: book.coverUrl ? `url(${freshSrc(book.coverUrl, book.updatedAt)})` : undefined }}
       />
       <div className="space-y-1 p-4">
         <p className="text-[11px] uppercase tracking-[0.18em] text-ajrak">

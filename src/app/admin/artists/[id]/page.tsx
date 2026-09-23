@@ -18,8 +18,8 @@ export default async function EditArtistPage({ params }: { params: Promise<{ id:
       <h1 className="mt-3 font-display text-4xl">Edit {artist.name}</h1>
       <form action={saveArtist} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={artist.id} />
-        <PicturePicker label="Artist picture" fileName="photoFile" urlName="photoUrl" current={artist.photoUrl} />
-        <PicturePicker label="Cover picture" fileName="coverFile" urlName="coverUrl" current={artist.coverUrl} />
+        <PicturePicker spec="artistPhoto" label="Artist picture" fileName="photoFile" urlName="photoUrl" current={artist.photoUrl} />
+        <PicturePicker spec="artistCover" label="Cover picture" fileName="coverFile" urlName="coverUrl" current={artist.coverUrl} />
         <Field label="Name"><input name="name" defaultValue={artist.name} required className={inputClass} /></Field>
         <Field label="Sindhi name"><input name="nameSd" defaultValue={artist.nameSd ?? ""} className={inputClass} /></Field>
         <Field label="Biography"><textarea name="biography" rows={5} defaultValue={artist.biography ?? ""} className={inputClass} /></Field>

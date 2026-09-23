@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteCategory } from "@/app/admin/entity-actions";
 
 export default async function AdminCategoriesPage() {
@@ -21,7 +22,7 @@ export default async function AdminCategoriesPage() {
           {categories.map((category) => (
             <tr key={category.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: category.imageUrl ? `url(${category.imageUrl})` : undefined }} />
+                <AdminThumb src={category.imageUrl} spec="category" />
               </td>
               <td>{category.name}</td>
               <td>{category.parent?.name ?? "—"}</td>

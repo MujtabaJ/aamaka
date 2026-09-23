@@ -5,6 +5,7 @@ import { parseJson } from "@/lib/utils";
 import { SongCard } from "@/components/music/SongCard";
 import { AlbumCard } from "@/components/music/AlbumCard";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -45,14 +46,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
   return (
     <div>
       <div className="relative min-h-[50vh] bg-ink text-cream">
-        <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: artist.coverUrl ? `url(${artist.coverUrl})` : undefined }} />
+        <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: artist.coverUrl ? `url(${freshSrc(artist.coverUrl, artist.updatedAt)})` : undefined }} />
         <div className="cinema-scrim absolute inset-0" />
         <div className="relative mx-auto flex min-h-[50vh] max-w-page items-end px-4 pb-12 md:px-6">
           <div className="flex items-end gap-5">
             {artist.photoUrl ? (
               <div
                 className="h-28 w-28 shrink-0 rounded-3xl bg-cover bg-center shadow-soft md:h-36 md:w-36"
-                style={{ backgroundImage: `url(${artist.photoUrl})` }}
+                style={{ backgroundImage: `url(${freshSrc(artist.photoUrl, artist.updatedAt)})` }}
               />
             ) : null}
             <div>

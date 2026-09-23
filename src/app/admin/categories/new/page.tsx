@@ -13,7 +13,7 @@ export default async function NewCategoryPage() {
       <Link href="/admin/categories" className="text-sm text-ajrak">Back to categories</Link>
       <h1 className="mt-3 font-display text-4xl">Add category</h1>
       <form action={saveCategory} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
-        <PicturePicker label="Category picture" fileName="photoFile" urlName="photoUrl" />
+        <PicturePicker spec="category" label="Category picture" fileName="photoFile" urlName="photoUrl" />
         <Field label="Name"><input name="name" required className={inputClass} /></Field>
         <Field label="Parent">
           <select name="parentId" className={inputClass}>

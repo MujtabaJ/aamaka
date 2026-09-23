@@ -19,7 +19,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
       <h1 className="mt-3 font-display text-4xl">Edit {user.name}</h1>
       <form action={saveUser} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={user.id} />
-        <PicturePicker label="Profile picture" current={user.image} />
+        <PicturePicker spec="avatar" label="Profile picture" current={user.image} />
         <Field label="Name"><input name="name" defaultValue={user.name} required className={inputClass} /></Field>
         <Field label="Email"><input name="email" type="email" defaultValue={user.email} required className={inputClass} /></Field>
         <Field label="New password (optional)"><input name="password" type="password" className={inputClass} /></Field>

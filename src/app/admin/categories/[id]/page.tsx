@@ -19,7 +19,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
       <h1 className="mt-3 font-display text-4xl">Edit {category.name}</h1>
       <form action={saveCategory} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={category.id} />
-        <PicturePicker label="Category picture" fileName="photoFile" urlName="photoUrl" current={category.imageUrl} />
+        <PicturePicker spec="category" label="Category picture" fileName="photoFile" urlName="photoUrl" current={category.imageUrl} />
         <Field label="Name"><input name="name" defaultValue={category.name} required className={inputClass} /></Field>
         <Field label="Parent">
           <select name="parentId" defaultValue={category.parentId ?? ""} className={inputClass}>

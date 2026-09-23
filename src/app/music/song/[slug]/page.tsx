@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/primitives";
 import { PlayButton } from "@/components/music/PlayButton";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -56,7 +57,7 @@ export default async function SongPage({ params }: { params: Promise<{ slug: str
       <div className="mx-auto grid max-w-page gap-8 px-4 pb-16 pt-8 md:grid-cols-[320px_1fr] md:gap-10 md:px-6 md:py-16">
         <div
           className="aspect-[4/3] rounded-3xl bg-cover bg-center shadow-gold md:aspect-square"
-          style={{ backgroundImage: song.coverUrl ? `url(${song.coverUrl})` : undefined }}
+          style={{ backgroundImage: song.coverUrl ? `url(${freshSrc(song.coverUrl, song.updatedAt)})` : undefined }}
         />
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-gold">{song.genre?.name || "Sindhi music"}</p>

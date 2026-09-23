@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { formatMoney } from "@/lib/money";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteBook } from "@/app/admin/entity-actions";
 
 export default async function AdminBooksPage() {
@@ -22,7 +23,7 @@ export default async function AdminBooksPage() {
           {books.map((book) => (
             <tr key={book.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: book.coverUrl ? `url(${book.coverUrl})` : undefined }} />
+                <AdminThumb src={book.coverUrl} spec="book" />
               </td>
               <td>{book.title}</td>
               <td>{book.author}</td>

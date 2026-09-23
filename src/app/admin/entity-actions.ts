@@ -8,10 +8,11 @@ import { rupeesToPaisa } from "@/lib/money";
 import { imageFromForm } from "@/lib/admin-images";
 import { getHomepageSections, saveHomepageSections, type HomepageSection, type HomepageSectionKey } from "@/lib/homepage";
 import { revalidatePath } from "next/cache";
+import { revalidateSite } from "@/lib/revalidate-site";
 import { redirect } from "next/navigation";
 
 function revalidatePublic() {
-  revalidatePath("/");
+  revalidateSite();
 }
 
 export async function saveArtist(form: FormData) {
@@ -178,7 +179,7 @@ export async function saveFaq(form: FormData) {
   if (id) await prisma.faq.update({ where: { id }, data });
   else await prisma.faq.create({ data });
   revalidatePath("/admin/faqs");
-  revalidatePath("/faq");
+  revalidateSite();
   redirect("/admin/faqs");
 }
 
@@ -186,7 +187,7 @@ export async function deleteFaq(form: FormData) {
   await requirePermission("content.manage");
   await prisma.faq.delete({ where: { id: String(form.get("id")) } });
   revalidatePath("/admin/faqs");
-  revalidatePath("/faq");
+  revalidateSite();
   redirect("/admin/faqs");
 }
 
@@ -206,7 +207,7 @@ export async function saveCategory(form: FormData) {
   if (id) await prisma.productCategory.update({ where: { id }, data });
   else await prisma.productCategory.create({ data });
   revalidatePath("/admin/categories");
-  revalidatePath("/shop");
+  revalidateSite();
   redirect("/admin/categories");
 }
 
@@ -214,7 +215,7 @@ export async function deleteCategory(form: FormData) {
   await requirePermission("products.manage");
   await prisma.productCategory.update({ where: { id: String(form.get("id")) }, data: { published: false } });
   revalidatePath("/admin/categories");
-  revalidatePath("/shop");
+  revalidateSite();
   redirect("/admin/categories");
 }
 
@@ -236,8 +237,7 @@ export async function savePlan(form: FormData) {
   if (id) await prisma.membershipPlan.update({ where: { id }, data });
   else await prisma.membershipPlan.create({ data });
   revalidatePath("/admin/memberships");
-  revalidatePath("/membership");
-  revalidatePublic();
+  revalidateSite();
   redirect("/admin/memberships");
 }
 
@@ -245,7 +245,7 @@ export async function deletePlan(form: FormData) {
   await requirePermission("memberships.manage");
   await prisma.membershipPlan.update({ where: { id: String(form.get("id")) }, data: { active: false } });
   revalidatePath("/admin/memberships");
-  revalidatePath("/membership");
+  revalidateSite();
   redirect("/admin/memberships");
 }
 
@@ -268,10 +268,7 @@ export async function saveHomepageSection(form: FormData) {
   };
   await saveHomepageSections(current.map((section) => (section.id === id ? next : section)));
   revalidatePath("/admin/homepage");
-  revalidatePath("/");
-  revalidatePath("/music");
-  revalidatePath("/books");
-  revalidatePath("/shop");
+  revalidatePublic();
   redirect("/admin/homepage");
 }
 
@@ -376,8 +373,7 @@ export async function savePage(form: FormData) {
   const data = { slug, title: String(form.get("title")), body: String(form.get("body")) };
   await prisma.sitePage.upsert({ where: { slug }, update: data, create: data });
   revalidatePath("/admin/homepage");
-  revalidatePath("/about");
-  revalidatePath(`/policies/${slug}`);
+  revalidateSite();
   redirect("/admin/homepage");
 }
 
@@ -434,6 +430,7 @@ export async function saveUser(form: FormData) {
     await prisma.user.create({ data: { ...data, passwordHash: await bcrypt.hash(password, 12) } });
   }
   revalidatePath("/admin/users");
+  revalidateSite();
   redirect("/admin/users");
 }
 

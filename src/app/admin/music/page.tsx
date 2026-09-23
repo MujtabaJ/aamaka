@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { deleteSong } from "@/app/admin/actions";
 
 export default async function AdminMusicPage() {
@@ -32,7 +33,7 @@ export default async function AdminMusicPage() {
           {songs.map((song) => (
             <tr key={song.id} className="border-t border-ink/10">
               <td className="py-3">
-                <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: song.coverUrl ? `url(${song.coverUrl})` : undefined }} />
+                <AdminThumb src={song.coverUrl} spec="song" />
               </td>
               <td>{song.title}</td>
               <td>{song.artist.name}</td>

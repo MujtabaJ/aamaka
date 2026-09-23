@@ -11,7 +11,7 @@ export default async function NewBookPage() {
       <Link href="/admin/books" className="text-sm text-ajrak">Back to books</Link>
       <h1 className="mt-3 font-display text-4xl">Add book</h1>
       <form action={saveBook} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
-        <PicturePicker label="Book cover" fileName="coverFile" urlName="coverUrl" />
+        <PicturePicker spec="book" label="Book cover" fileName="coverFile" urlName="coverUrl" />
         <Field label="Title"><input name="title" required className={inputClass} /></Field>
         <Field label="Sindhi title"><input name="titleSd" className={inputClass} /></Field>
         <Field label="Author"><input name="author" required className={inputClass} /></Field>

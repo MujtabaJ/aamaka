@@ -18,7 +18,7 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
       <h1 className="mt-3 font-display text-4xl">Edit {article.title}</h1>
       <form action={saveArticle} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={article.id} />
-        <PicturePicker label="Cover picture" fileName="coverFile" urlName="coverUrl" current={article.coverUrl} />
+        <PicturePicker spec="article" label="Cover picture" fileName="coverFile" urlName="coverUrl" current={article.coverUrl} />
         <Field label="Title"><input name="title" defaultValue={article.title} required className={inputClass} /></Field>
         <Field label="Excerpt"><input name="excerpt" defaultValue={article.excerpt} className={inputClass} /></Field>
         <Field label="Body"><textarea name="body" rows={8} defaultValue={article.body} className={inputClass} /></Field>

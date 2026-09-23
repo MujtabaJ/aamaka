@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { pageMeta, jsonLd, siteUrl } from "@/lib/seo";
 import { formatDate } from "@/lib/utils";
 import type { Metadata } from "next";
+import { freshSrc } from "@/lib/image-specs";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -40,7 +41,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
       {article.coverUrl ? (
         <div
           className="mt-8 aspect-[16/8] rounded-3xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${article.coverUrl})` }}
+          style={{ backgroundImage: `url(${freshSrc(article.coverUrl, article.updatedAt)})` }}
         />
       ) : null}
       <p className="mt-4 text-ink/70">{article.excerpt}</p>

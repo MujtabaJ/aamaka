@@ -1,4 +1,5 @@
 import type { HomepageSection } from "@/lib/homepage";
+import { freshSrc } from "@/lib/image-specs";
 
 export function PageHero({
   section,
@@ -7,7 +8,7 @@ export function PageHero({
   section?: HomepageSection | null;
   fallbackTitle?: string;
 }) {
-  const image = section?.imageUrl;
+  const image = freshSrc(section?.imageUrl);
   return (
     <>
       {image ? (

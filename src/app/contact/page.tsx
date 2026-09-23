@@ -2,6 +2,7 @@ import { pageMeta } from "@/lib/seo";
 import { getSettings } from "@/lib/settings";
 import { Button, Field, inputClass } from "@/components/ui/primitives";
 import { getHomepageSection } from "@/lib/homepage";
+import { freshSrc } from "@/lib/image-specs";
 
 export const metadata = pageMeta({
   title: "Contact",
@@ -22,7 +23,7 @@ export default async function ContactPage({
         {section?.imageUrl ? (
           <div
             className="mb-8 h-40 overflow-hidden rounded-3xl bg-cover bg-center"
-            style={{ backgroundImage: `url(${section.imageUrl})` }}
+            style={{ backgroundImage: `url(${freshSrc(section.imageUrl)})` }}
           />
         ) : null}
         <p className="text-xs uppercase tracking-[0.28em] text-ajrak">{section?.eyebrow || "Contact"}</p>

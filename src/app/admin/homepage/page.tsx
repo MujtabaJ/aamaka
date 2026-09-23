@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { getHomepageSections } from "@/lib/homepage";
 import { DeleteButton, RowActions } from "@/components/admin/RowActions";
+import { AdminThumb } from "@/components/admin/AdminThumb";
 import { addCustomSection, deleteAnnouncement, deleteHero, deleteHomepageSection, deletePage } from "@/app/admin/entity-actions";
 
 export default async function AdminHomepagePage() {
@@ -33,7 +34,7 @@ export default async function AdminHomepagePage() {
             {heroes.map((hero) => (
               <tr key={hero.id} className="border-t border-ink/10">
                 <td className="py-3">
-                  <div className="h-14 w-24 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: hero.imageUrl ? `url(${hero.imageUrl})` : undefined }} />
+                  <AdminThumb src={hero.imageUrl} spec="hero" wide />
                 </td>
                 <td>{hero.title}</td>
                 <td>{hero.active ? "Active" : "Hidden"}</td>
@@ -59,7 +60,7 @@ export default async function AdminHomepagePage() {
             {sections.map((section) => (
               <tr key={section.id} className="border-t border-ink/10">
                 <td className="py-3">
-                  <div className="h-14 w-14 rounded-2xl bg-ink/10 bg-cover bg-center" style={{ backgroundImage: section.imageUrl ? `url(${section.imageUrl})` : undefined }} />
+                  <AdminThumb src={section.imageUrl} spec="section" />
                 </td>
                 <td className="capitalize">{section.key}</td>
                 <td>{section.title}</td>

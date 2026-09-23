@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
     return new NextResponse(data, {
       headers: {
         "Content-Type": TYPES[path.extname(file).toLowerCase()] || "application/octet-stream",
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "no-store, must-revalidate",
       },
     });
   } catch {

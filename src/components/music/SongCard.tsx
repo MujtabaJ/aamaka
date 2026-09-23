@@ -5,6 +5,7 @@ import { Play } from "lucide-react";
 import { Badge } from "@/components/ui/primitives";
 import { usePlayer, type Playable } from "@/components/music/PlayerProvider";
 import { accessBadge } from "@/lib/access-ui";
+import { freshSrc } from "@/lib/image-specs";
 
 export type SongCardData = Playable & {
   slug: string;
@@ -20,7 +21,7 @@ export function SongCard({ song, queue }: { song: SongCardData; queue?: Playable
       <div className="relative aspect-square overflow-hidden">
         <div
           className="h-full w-full bg-ink/20 bg-cover bg-center transition duration-500 group-hover:scale-105"
-          style={{ backgroundImage: song.coverUrl ? `url(${song.coverUrl})` : undefined }}
+          style={{ backgroundImage: song.coverUrl ? `url(${freshSrc(song.coverUrl)})` : undefined }}
         />
         <button
           onClick={() => play(song, queue)}
