@@ -37,16 +37,11 @@ export async function imageFromForm(
   urlField: string,
   current?: string | null,
 ) {
-  try {
-    const value = form.get(fileField);
-    if (value && typeof value !== "string" && value.size) {
-      return await storeUpload(value);
-    }
-    const pasted = String(form.get(urlField) || "").trim();
-    if (pasted) return withCacheBust(pasted);
-    return current ? withCacheBust(current) : null;
-  } catch (error) {
-    if (current) return withCacheBust(current);
-    throw error;
+  const value = form.get(fileField);
+  if (value && typeof value !== "string" && value.size) {
+    return await storeUpload(value);
   }
+  const pasted = String(form.get(urlField) || "").trim();
+  if (pasted) return withCacheBust(pasted);
+  return current ? withCacheBust(current) : null;
 }

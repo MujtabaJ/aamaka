@@ -16,7 +16,7 @@ export default async function EditArtistPage({ params }: { params: Promise<{ id:
     <div className="max-w-3xl">
       <Link href="/admin/artists" className="text-sm text-ajrak">Back to artists</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {artist.name}</h1>
-      <form action={saveArtist} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveArtist} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={artist.id} />
         <PicturePicker spec="artistPhoto" label="Artist picture" fileName="photoFile" urlName="photoUrl" current={artist.photoUrl} />
         <PicturePicker spec="artistCover" label="Cover picture" fileName="coverFile" urlName="coverUrl" current={artist.coverUrl} />

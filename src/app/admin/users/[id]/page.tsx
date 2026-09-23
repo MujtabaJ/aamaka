@@ -17,7 +17,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
     <div className="max-w-3xl">
       <Link href="/admin/users" className="text-sm text-ajrak">Back to users</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {user.name}</h1>
-      <form action={saveUser} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveUser} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={user.id} />
         <PicturePicker spec="avatar" label="Profile picture" current={user.image} />
         <Field label="Name"><input name="name" defaultValue={user.name} required className={inputClass} /></Field>

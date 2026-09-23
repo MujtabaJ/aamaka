@@ -12,7 +12,7 @@ export default async function NewUserPage() {
     <div className="max-w-3xl">
       <Link href="/admin/users" className="text-sm text-ajrak">Back to users</Link>
       <h1 className="mt-3 font-display text-4xl">Add user</h1>
-      <form action={saveUser} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveUser} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <PicturePicker spec="avatar" label="Profile picture" />
         <Field label="Name"><input name="name" required className={inputClass} /></Field>
         <Field label="Email"><input name="email" type="email" required className={inputClass} /></Field>

@@ -2,6 +2,15 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 
+function copyWritable(src: string, dest: string) {
+  fs.writeFileSync(dest, fs.readFileSync(src));
+  try {
+    fs.chmodSync(dest, 0o666);
+  } catch {
+    /* /tmp files are writable by the process that created them */
+  }
+}
+
 function serverlessDatabaseUrl() {
   if (!process.env.VERCEL) return process.env.DATABASE_URL;
   const dest = "/tmp/aamaka.db";
@@ -10,18 +19,18 @@ function serverlessDatabaseUrl() {
     for (const file of ["seeded.db", "dev.db"]) {
       const src = path.join(process.cwd(), "prisma", file);
       if (fs.existsSync(src)) {
-        fs.copyFileSync(src, dest);
+        copyWritable(src, dest);
         break;
       }
     }
   }
   if (fs.existsSync(dest)) {
     try {
-      fs.chmodSync(dest, 0o666);
+      fs.accessSync(dest, fs.constants.W_OK);
     } catch {
-      /* the copy may already be writable */
+      copyWritable(dest, dest);
     }
-    return `file://${dest}`;
+    return `file:${dest}`;
   }
   return process.env.DATABASE_URL;
 }

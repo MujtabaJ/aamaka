@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { revalidateSite } from "@/lib/revalidate-site";
 
-function isRedirectError(error: unknown) {
+export function isRedirectError(error: unknown) {
   return (
     typeof error === "object" &&
     error !== null &&

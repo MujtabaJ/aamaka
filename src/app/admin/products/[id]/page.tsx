@@ -21,7 +21,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     <div className="max-w-3xl">
       <Link href="/admin/products" className="text-sm text-ajrak">Back to products</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {product.name}</h1>
-      <form action={saveProduct} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveProduct} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={product.id} />
         <PicturePicker spec="product" label="Product picture" fileName="photoFile" urlName="photoUrl" current={images[0]} />
         <Field label="Name"><input name="name" defaultValue={product.name} className={inputClass} /></Field>

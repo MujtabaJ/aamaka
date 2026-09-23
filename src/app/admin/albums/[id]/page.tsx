@@ -18,7 +18,7 @@ export default async function EditAlbumPage({ params }: { params: Promise<{ id: 
     <div className="max-w-3xl">
       <Link href="/admin/albums" className="text-sm text-ajrak">Back to albums</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {album.title}</h1>
-      <form action={saveAlbum} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveAlbum} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={album.id} />
         <PicturePicker spec="album" label="Album cover" fileName="coverFile" urlName="coverUrl" current={album.coverUrl} />
         <Field label="Title"><input name="title" defaultValue={album.title} required className={inputClass} /></Field>

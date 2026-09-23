@@ -7,9 +7,7 @@ import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
 import { imageFromForm, withCacheBust } from "@/lib/admin-images";
-import { revalidatePath } from "next/cache";
-import { finishSave } from "@/lib/admin-save";
-import { redirect } from "next/navigation";
+import { runAdminSave } from "@/lib/admin-save";
 import { notify } from "@/lib/notifications";
 import { fulfillOrder } from "@/lib/orders";
 
@@ -23,9 +21,10 @@ async function fileFromForm(form: FormData, key: string) {
 }
 
 export async function saveSong(form: FormData) {
+  const id = String(form.get("id") || "");
+  await runAdminSave("/admin/music", async () => {
   const user = await requirePermission("music.manage");
   await ensureStorage();
-  const id = String(form.get("id") || "");
   const existing = id ? await prisma.song.findUnique({ where: { id } }) : null;
   const title = String(form.get("title") || "");
   const slug = existing?.slug || toSlug(String(form.get("slug") || title));
@@ -131,12 +130,13 @@ export async function saveSong(form: FormData) {
     : await prisma.song.create({ data });
 
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: song.id });
-  finishSave("/admin/music");
+  }, id ? `/admin/music/${id}` : "/admin/music/new");
 }
 
 export async function saveProduct(form: FormData) {
-  const user = await requirePermission("products.manage");
   const id = String(form.get("id") || "");
+  await runAdminSave("/admin/products", async () => {
+  const user = await requirePermission("products.manage");
   const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
   const name = String(form.get("name"));
   const images = [] as string[];
@@ -179,48 +179,50 @@ export async function saveProduct(form: FormData) {
     ? await prisma.product.update({ where: { id }, data })
     : await prisma.product.create({ data });
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: product.id });
-  finishSave("/admin/products");
+  }, id ? `/admin/products/${id}` : "/admin/products/new");
 }
 
 export async function updateOrderStatus(form: FormData) {
-  const user = await requirePermission("orders.manage");
   const id = String(form.get("id"));
-  const status = String(form.get("status"));
-  const trackingNumber = String(form.get("trackingNumber") || "") || null;
-  const courierName = String(form.get("courierName") || "") || null;
-  const order = await prisma.order.update({
-    where: { id },
-    data: { status, trackingNumber, courierName },
+  await runAdminSave(`/admin/orders/${id}`, async () => {
+    const user = await requirePermission("orders.manage");
+    const status = String(form.get("status"));
+    const trackingNumber = String(form.get("trackingNumber") || "") || null;
+    const courierName = String(form.get("courierName") || "") || null;
+    const order = await prisma.order.update({
+      where: { id },
+      data: { status, trackingNumber, courierName },
+    });
+    if (status === "paid" && order.paymentStatus !== "paid") {
+      await prisma.order.update({ where: { id }, data: { paymentStatus: "paid" } });
+      await fulfillOrder(id);
+    }
+    await audit({ userId: user.id, action: "status", entity: "order", entityId: id, metadata: { status } });
+    await notify({
+      userId: order.userId,
+      type: "order_status",
+      title: `Order ${order.number} is ${status.replace("_", " ")}`,
+      body: trackingNumber ? `Tracking: ${courierName} ${trackingNumber}` : `Your order is now ${status}.`,
+      href: `/account/orders/${order.id}`,
+      orderId: order.id,
+    });
   });
-  if (status === "paid" && order.paymentStatus !== "paid") {
-    await prisma.order.update({ where: { id }, data: { paymentStatus: "paid" } });
-    await fulfillOrder(id);
-  }
-  await audit({ userId: user.id, action: "status", entity: "order", entityId: id, metadata: { status } });
-  await notify({
-    userId: order.userId,
-    type: "order_status",
-    title: `Order ${order.number} is ${status.replace("_", " ")}`,
-    body: trackingNumber ? `Tracking: ${courierName} ${trackingNumber}` : `Your order is now ${status}.`,
-    href: `/account/orders/${order.id}`,
-    orderId: order.id,
-  });
-  revalidatePath("/admin/orders");
-  redirect(`/admin/orders/${id}`);
 }
 
 export async function deleteSong(form: FormData) {
-  const user = await requirePermission("music.manage");
-  const id = String(form.get("id"));
-  await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
-  await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
-  finishSave("/admin/music");
+  await runAdminSave("/admin/music", async () => {
+    const user = await requirePermission("music.manage");
+    const id = String(form.get("id"));
+    await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
+    await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
+  });
 }
 
 export async function deleteProduct(form: FormData) {
-  const user = await requirePermission("products.manage");
-  const id = String(form.get("id"));
-  await prisma.product.update({ where: { id }, data: { status: "archived" } });
-  await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
-  finishSave("/admin/products");
+  await runAdminSave("/admin/products", async () => {
+    const user = await requirePermission("products.manage");
+    const id = String(form.get("id"));
+    await prisma.product.update({ where: { id }, data: { status: "archived" } });
+    await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
+  });
 }

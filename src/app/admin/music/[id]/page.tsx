@@ -21,7 +21,7 @@ export default async function EditSongPage({ params }: { params: Promise<{ id: s
     <div className="max-w-3xl">
       <Link href="/admin/music" className="text-sm text-ajrak">Back to music</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {song.title}</h1>
-      <form action={saveSong} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveSong} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={song.id} />
         <PicturePicker spec="song" label="Cover picture" fileName="coverFile" urlName="coverUrl" current={song.coverUrl} />
         <Field label="Title"><input name="title" defaultValue={song.title} className={inputClass} /></Field>

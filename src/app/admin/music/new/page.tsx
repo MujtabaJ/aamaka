@@ -16,7 +16,7 @@ export default async function NewSongPage() {
     <div className="max-w-3xl">
       <Link href="/admin/music" className="text-sm text-ajrak">Back to music</Link>
       <h1 className="mt-3 font-display text-4xl">Add song</h1>
-      <form action={saveSong} className="mt-8 space-y-8">
+      <form action={saveSong} encType="multipart/form-data" className="mt-8 space-y-8">
         <section className="rounded-3xl bg-white p-6">
           <h2 className="font-display text-2xl">Song information</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">

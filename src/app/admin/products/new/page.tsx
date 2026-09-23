@@ -13,7 +13,7 @@ export default async function NewProductPage() {
     <div className="max-w-3xl">
       <Link href="/admin/products" className="text-sm text-ajrak">Back to products</Link>
       <h1 className="mt-3 font-display text-4xl">Add product</h1>
-      <form action={saveProduct} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveProduct} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <PicturePicker spec="product" label="Product picture" fileName="photoFile" urlName="photoUrl" />
         <Field label="Name"><input name="name" required className={inputClass} /></Field>
         <Field label="Sindhi name"><input name="nameSd" className={inputClass} /></Field>

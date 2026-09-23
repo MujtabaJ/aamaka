@@ -10,7 +10,7 @@ export default async function NewHeroPage() {
     <div className="max-w-3xl">
       <Link href="/admin/homepage" className="text-sm text-ajrak">Back to homepage</Link>
       <h1 className="mt-3 font-display text-4xl">Add hero</h1>
-      <form action={saveHero} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveHero} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <PicturePicker spec="hero" label="Hero picture" />
         <Field label="Kicker"><input name="kicker" defaultValue="AA Maka Production" className={inputClass} /></Field>
         <Field label="Title"><input name="title" required className={inputClass} /></Field>

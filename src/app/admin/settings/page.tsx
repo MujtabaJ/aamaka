@@ -1,38 +1,37 @@
 import { requirePermission } from "@/lib/session";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { Field, inputClass, Button } from "@/components/ui/primitives";
-import { revalidatePath } from "next/cache";
+import { runAdminSave } from "@/lib/admin-save";
 
 export default async function AdminSettingsPage() {
   await requirePermission("settings.manage");
   const settings = await getSettings();
   async function save(form: FormData) {
     "use server";
-    await requirePermission("settings.manage");
-    const current = await getSettings();
-    await saveSettings({
-      ...current,
-      siteName: String(form.get("siteName")),
-      siteNameSd: String(form.get("siteNameSd") || current.siteNameSd),
-      tagline: String(form.get("tagline") || current.tagline),
-      mission: String(form.get("mission") || current.mission),
-      email: String(form.get("email")),
-      phone: String(form.get("phone")),
-      address: String(form.get("address")),
-      whatsapp: String(form.get("whatsapp")),
-      shippingFeePaisa: Math.round(Number(form.get("shippingFee") || 0) * 100),
-      freeShippingOverPaisa: Math.round(Number(form.get("freeShipping") || 0) * 100),
-      bankInstructions: String(form.get("bankInstructions")),
-      socials: {
-        youtube: String(form.get("youtube") || ""),
-        facebook: String(form.get("facebook") || ""),
-        tiktok: String(form.get("tiktok") || ""),
-        instagram: String(form.get("instagram") || ""),
-      },
+    await runAdminSave("/admin/settings", async () => {
+      await requirePermission("settings.manage");
+      const current = await getSettings();
+      await saveSettings({
+        ...current,
+        siteName: String(form.get("siteName")),
+        siteNameSd: String(form.get("siteNameSd") || current.siteNameSd),
+        tagline: String(form.get("tagline") || current.tagline),
+        mission: String(form.get("mission") || current.mission),
+        email: String(form.get("email")),
+        phone: String(form.get("phone")),
+        address: String(form.get("address")),
+        whatsapp: String(form.get("whatsapp")),
+        shippingFeePaisa: Math.round(Number(form.get("shippingFee") || 0) * 100),
+        freeShippingOverPaisa: Math.round(Number(form.get("freeShipping") || 0) * 100),
+        bankInstructions: String(form.get("bankInstructions")),
+        socials: {
+          youtube: String(form.get("youtube") || ""),
+          facebook: String(form.get("facebook") || ""),
+          tiktok: String(form.get("tiktok") || ""),
+          instagram: String(form.get("instagram") || ""),
+        },
+      });
     });
-    revalidatePath("/admin/settings");
-    revalidatePath("/");
-    revalidatePath("/about");
   }
   return (
     <div className="max-w-2xl">

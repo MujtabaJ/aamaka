@@ -16,7 +16,7 @@ export default async function EditHomepageSectionPage({ params }: { params: Prom
     <div className="max-w-3xl">
       <Link href="/admin/homepage" className="text-sm text-ajrak">Back to homepage</Link>
       <h1 className="mt-3 font-display text-4xl">Edit {section.title}</h1>
-      <form action={saveHomepageSection} className="mt-6 space-y-4 rounded-3xl bg-white p-6">
+      <form action={saveHomepageSection} encType="multipart/form-data" className="mt-6 space-y-4 rounded-3xl bg-white p-6">
         <input type="hidden" name="id" value={section.id} />
         <PicturePicker spec="section" label="Section picture" current={section.imageUrl} />
         <Field label="Eyebrow / small title"><input name="eyebrow" defaultValue={section.eyebrow} className={inputClass} /></Field>
