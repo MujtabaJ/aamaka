@@ -1,10 +1,60 @@
 import { cookies } from "next/headers";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { effectivePrice } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
 import { parseJson } from "@/lib/utils";
 
 export const CART_COOKIE = "aamaka_cart";
+
+const cartInclude = {
+  coupon: true,
+  items: {
+    include: {
+      product: true,
+      variant: true,
+      book: true,
+    },
+  },
+} as const;
+
+export type CartWithItems = Prisma.CartGetPayload<{ include: typeof cartInclude }>;
+
+export async function getCart(userId?: string | null) {
+  try {
+    const jar = await cookies();
+    const sessionId = jar.get(CART_COOKIE)?.value;
+
+    if (userId) {
+      const existing = await prisma.cart.findFirst({
+        where: { userId },
+        include: cartInclude,
+      });
+      if (existing) return existing;
+    }
+
+    if (sessionId) {
+      return prisma.cart.findUnique({
+        where: { sessionId },
+        include: cartInclude,
+      });
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function persistCartCookie(sessionId: string) {
+  return cookies().then((jar) =>
+    jar.set(CART_COOKIE, sessionId, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    }),
+  );
+}
 
 export async function getOrCreateCart(userId?: string | null) {
   const jar = await cookies();
@@ -40,22 +90,33 @@ export async function getOrCreateCart(userId?: string | null) {
     }
   }
 
-  const created = await prisma.cart.create({
-    data: {
-      userId: userId ?? undefined,
-      sessionId: sessionId ?? crypto.randomUUID(),
-    },
-    include: cartInclude,
-  });
-
-  jar.set(CART_COOKIE, created.sessionId ?? created.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
-
-  return created;
+  const nextSessionId = sessionId ?? crypto.randomUUID();
+  try {
+    const created = await prisma.cart.create({
+      data: {
+        userId: userId ?? undefined,
+        sessionId: nextSessionId,
+      },
+      include: cartInclude,
+    });
+    try {
+      await persistCartCookie(created.sessionId ?? created.id);
+    } catch {
+      // Route handlers persist the cookie; pages must not write cookies.
+    }
+    return created;
+  } catch {
+    return {
+      id: "",
+      userId: userId ?? null,
+      sessionId: nextSessionId,
+      couponId: null,
+      coupon: null,
+      items: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 }
 
 async function mergeGuestCart(userCartId: string, sessionId: string) {
@@ -81,20 +142,20 @@ async function mergeGuestCart(userCartId: string, sessionId: string) {
   await prisma.cart.delete({ where: { id: guest.id } });
 }
 
-const cartInclude = {
-  coupon: true,
-  items: {
-    include: {
-      product: true,
-      variant: true,
-      book: true,
-    },
-  },
-} as const;
-
-export type CartWithItems = Awaited<ReturnType<typeof getOrCreateCart>>;
-
-export async function summarizeCart(cart: CartWithItems) {
+export async function summarizeCart(cart: CartWithItems | null) {
+  if (!cart) {
+    return {
+      lines: [],
+      subtotalPaisa: 0,
+      discountPaisa: 0,
+      shippingPaisa: 0,
+      taxPaisa: 0,
+      totalPaisa: 0,
+      hasPhysical: false,
+      hasDigital: false,
+      coupon: null,
+    };
+  }
   const settings = await getSettings();
   const albumIds = cart.items.filter((i) => i.albumId).map((i) => i.albumId!) ;
   const albums = albumIds.length

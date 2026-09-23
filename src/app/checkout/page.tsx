@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { getOrCreateCart, summarizeCart } from "@/lib/cart";
+import { getCart, summarizeCart } from "@/lib/cart";
 import { availableMethods } from "@/lib/payments";
 import { getSettings } from "@/lib/settings";
 import { formatMoney } from "@/lib/money";
@@ -15,7 +15,7 @@ export const metadata = pageMeta({
 
 export default async function CheckoutPage() {
   const session = await auth();
-  const cart = await getOrCreateCart(session?.user?.id);
+  const cart = await getCart(session?.user?.id);
   const summary = await summarizeCart(cart);
   if (summary.lines.length === 0) redirect("/cart");
   const settings = await getSettings();

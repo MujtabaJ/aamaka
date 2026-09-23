@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { getOrCreateCart, summarizeCart } from "@/lib/cart";
+import { getCart, summarizeCart } from "@/lib/cart";
 import { formatMoney } from "@/lib/money";
 import { Button } from "@/components/ui/primitives";
 import { pageMeta } from "@/lib/seo";
@@ -12,7 +12,7 @@ export const metadata = pageMeta({
 
 export default async function CartPage() {
   const session = await auth();
-  const cart = await getOrCreateCart(session?.user?.id);
+  const cart = await getCart(session?.user?.id);
   const summary = await summarizeCart(cart);
 
   return (
