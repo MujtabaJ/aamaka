@@ -44,6 +44,23 @@ export async function GET(request: Request) {
     }
   }
 
+  if (media.storageKey.startsWith("http://") || media.storageKey.startsWith("https://")) {
+    if (media.visibility === "public") {
+      return NextResponse.redirect(media.storageKey, 302);
+    }
+    const remote = await fetch(media.storageKey);
+    if (!remote.ok || !remote.body) {
+      return NextResponse.json({ error: "Media file missing" }, { status: 404 });
+    }
+    return new Response(remote.body, {
+      headers: {
+        "Content-Type": media.mimeType,
+        "Cache-Control": "private, max-age=60",
+        "Content-Disposition": "inline",
+      },
+    });
+  }
+
   try {
     const filePath = absolutePrivatePath(media.storageKey);
     const info = await stat(filePath);

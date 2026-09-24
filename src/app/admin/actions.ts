@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/session";
 import { audit } from "@/lib/audit";
 import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
-import { savePrivateFile, validateUpload, ensureStorage } from "@/lib/media";
+import { savePrivateFile, validateUpload } from "@/lib/media";
 import { imageFromForm, withCacheBust } from "@/lib/admin-images";
 import { persistEntity, rememberEntity } from "@/lib/cms-overlay";
 import { runAdminSave } from "@/lib/admin-save";
@@ -25,7 +25,6 @@ export async function saveSong(form: FormData) {
   const id = String(form.get("id") || "");
   await runAdminSave("/admin/music", async () => {
   const user = await requirePermission("music.manage");
-  await ensureStorage();
   const existing = id ? await prisma.song.findUnique({ where: { id } }) : null;
   const title = String(form.get("title") || "");
   const slug = existing?.slug || toSlug(String(form.get("slug") || title));
@@ -44,54 +43,30 @@ export async function saveSong(form: FormData) {
     extra.set("coverFile", cover.file);
     coverUrl = (await imageFromForm(extra, "coverFile", "coverUrl", null, "song")) || undefined;
   }
-  if (preview) {
-    validateUpload("audio", preview.file.type, preview.file.size);
-    const key = await savePrivateFile(preview.file.name, preview.buffer);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        kind: "audio",
-        visibility: "public",
-        filename: preview.file.name,
-        mimeType: preview.file.type,
-        sizeBytes: preview.file.size,
-        storageKey: key,
-        uploadedById: user.id,
-      },
-    });
-    previewMediaId = media.id;
+  async function storeMedia(kind: "audio" | "video", file: File, buffer: Buffer, visibility: "public" | "private") {
+    try {
+      validateUpload(kind, file.type, file.size);
+      const key = await savePrivateFile(file.name, buffer);
+      const media = await prisma.mediaAsset.create({
+        data: {
+          kind,
+          visibility,
+          filename: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          storageKey: key,
+          uploadedById: user.id,
+        },
+      });
+      return media.id;
+    } catch {
+      return undefined;
+    }
   }
-  if (audio) {
-    validateUpload("audio", audio.file.type, audio.file.size);
-    const key = await savePrivateFile(audio.file.name, audio.buffer);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        kind: "audio",
-        visibility: "private",
-        filename: audio.file.name,
-        mimeType: audio.file.type,
-        sizeBytes: audio.file.size,
-        storageKey: key,
-        uploadedById: user.id,
-      },
-    });
-    fullAudioMediaId = media.id;
-  }
-  if (video) {
-    validateUpload("video", video.file.type, video.file.size);
-    const key = await savePrivateFile(video.file.name, video.buffer);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        kind: "video",
-        visibility: "private",
-        filename: video.file.name,
-        mimeType: video.file.type,
-        sizeBytes: video.file.size,
-        storageKey: key,
-        uploadedById: user.id,
-      },
-    });
-    fullVideoMediaId = media.id;
-  }
+
+  if (preview) previewMediaId = await storeMedia("audio", preview.file, preview.buffer, "public");
+  if (audio) fullAudioMediaId = await storeMedia("audio", audio.file, audio.buffer, "private");
+  if (video) fullVideoMediaId = await storeMedia("video", video.file, video.buffer, "private");
 
   const data = {
     title,

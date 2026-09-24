@@ -9,6 +9,7 @@ function secret() {
 }
 
 export function storageRoot() {
+  if (process.env.VERCEL) return "/tmp/aamaka-storage";
   return path.resolve(process.cwd(), process.env.STORAGE_LOCAL_DIR ?? "./storage");
 }
 
@@ -46,17 +47,34 @@ export function verifyMediaToken(token: string, mediaId: string, userId?: string
 }
 
 export async function ensureStorage() {
-  await fs.mkdir(privateDir(), { recursive: true });
-  await fs.mkdir(path.join(publicMediaDir(), "covers"), { recursive: true });
-  await fs.mkdir(path.join(publicMediaDir(), "products"), { recursive: true });
-  await fs.mkdir(path.join(publicMediaDir(), "previews"), { recursive: true });
+  try {
+    await fs.mkdir(privateDir(), { recursive: true });
+    await fs.mkdir(path.join(publicMediaDir(), "covers"), { recursive: true });
+    await fs.mkdir(path.join(publicMediaDir(), "products"), { recursive: true });
+    await fs.mkdir(path.join(publicMediaDir(), "previews"), { recursive: true });
+  } catch {
+    /* serverless disks can be read-only; pictures go to durable Blob storage */
+  }
 }
 
 export async function savePrivateFile(filename: string, buffer: Buffer) {
-  await ensureStorage();
   const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const key = `${Date.now()}-${safe}`;
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID || process.env.VERCEL) {
+    try {
+      const { put } = await import("@vercel/blob");
+      const stored = await put(`media/private/${key}`, buffer, {
+        access: "public",
+        addRandomSuffix: true,
+      });
+      return stored.url;
+    } catch {
+      /* fall through to a local copy */
+    }
+  }
+  await ensureStorage();
   const full = path.join(privateDir(), key);
+  await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, buffer);
   return key;
 }
