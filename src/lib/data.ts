@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { applyBag, loadCmsOverlay } from "@/lib/cms-overlay";
 
 export async function getPublishedSongFilters() {
   const now = new Date();
@@ -56,17 +57,22 @@ export async function getHomeData() {
       prisma.genre.findMany({ where: { published: true } }),
     ]);
 
+  const overlay = await loadCmsOverlay();
+  const announcementExtra = announcement
+    ? overlay.announcements[announcement.id] || null
+    : null;
+
   return {
-    heroes,
-    announcement,
-    songs,
-    exclusive,
-    albums,
-    products,
-    books,
-    artists,
-    articles,
-    plans,
+    heroes: applyBag(heroes, overlay.heroes),
+    announcement: announcementExtra && announcement ? { ...announcement, ...announcementExtra } : announcement,
+    songs: applyBag(songs, overlay.songs),
+    exclusive: applyBag(exclusive, overlay.songs),
+    albums: applyBag(albums, overlay.albums),
+    products: applyBag(products, overlay.products),
+    books: applyBag(books, overlay.books),
+    artists: applyBag(artists, overlay.artists),
+    articles: applyBag(articles, overlay.articles),
+    plans: applyBag(plans, overlay.plans),
     genres,
   };
 }

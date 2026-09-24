@@ -29,6 +29,7 @@ export async function saveArtist(form: FormData) {
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
+    if (id) await rememberEntity("artists", id, data);
     const row = id ? await prisma.artist.update({ where: { id }, data }) : await prisma.artist.create({ data });
     await rememberEntity("artists", row.id, data);
   }, id ? `/admin/artists/${id}` : "/admin/artists/new");
@@ -61,6 +62,7 @@ export async function saveAlbum(form: FormData) {
       pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
       published: form.get("published") === "on" || !id,
     };
+    if (id) await rememberEntity("albums", id, data);
     const row = id
       ? await prisma.album.update({ where: { id }, data })
       : await prisma.album.create({ data: { ...data, accessType: "paid" } });
@@ -99,6 +101,7 @@ export async function saveBook(form: FormData) {
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
+    if (id) await rememberEntity("books", id, data);
     const row = id ? await prisma.book.update({ where: { id }, data }) : await prisma.book.create({ data });
     await rememberEntity("books", row.id, data);
   }, id ? `/admin/books/${id}` : "/admin/books/new");
@@ -163,8 +166,9 @@ export async function saveFaq(form: FormData) {
       sortOrder: Number(form.get("sortOrder") || 0),
       published: form.get("published") === "on" || !id,
     };
-    if (id) await prisma.faq.update({ where: { id }, data });
-    else await prisma.faq.create({ data });
+    if (id) await rememberEntity("faqs", id, data);
+    const row = id ? await prisma.faq.update({ where: { id }, data }) : await prisma.faq.create({ data });
+    await rememberEntity("faqs", row.id, data);
   }, id ? `/admin/faqs/${id}` : "/admin/faqs/new");
 }
 
@@ -219,8 +223,9 @@ export async function savePlan(form: FormData) {
       features: JSON.stringify(String(form.get("features") || "").split("\n").filter(Boolean)),
       active: form.get("active") === "on" || !id,
     };
-    if (id) await prisma.membershipPlan.update({ where: { id }, data });
-    else await prisma.membershipPlan.create({ data });
+    if (id) await rememberEntity("plans", id, data);
+    const row = id ? await prisma.membershipPlan.update({ where: { id }, data }) : await prisma.membershipPlan.create({ data });
+    await rememberEntity("plans", row.id, data);
   }, id ? `/admin/memberships/${id}` : "/admin/memberships/new");
 }
 
@@ -273,6 +278,7 @@ export async function saveHero(form: FormData) {
       ctaQuaternaryHref: String(form.get("ctaQuaternaryHref") || "/shop"),
       active: form.get("active") === "on" || !id,
     };
+    if (id) await rememberEntity("heroes", id, data);
     const row = id ? await prisma.homepageHero.update({ where: { id }, data }) : await prisma.homepageHero.create({ data });
     await rememberEntity("heroes", row.id, data);
   }, id ? `/admin/homepage/hero/${id}` : "/admin/homepage/hero/new");
@@ -337,8 +343,9 @@ export async function saveAnnouncement(form: FormData) {
       href: String(form.get("href") || "") || null,
       active: form.get("active") === "on" || !id,
     };
-    if (id) await prisma.announcement.update({ where: { id }, data });
-    else await prisma.announcement.create({ data });
+    if (id) await rememberEntity("announcements", id, data);
+    const row = id ? await prisma.announcement.update({ where: { id }, data }) : await prisma.announcement.create({ data });
+    await rememberEntity("announcements", row.id, data);
   }, id ? `/admin/homepage/announcement/${id}` : "/admin/homepage/announcement/new");
 }
 
@@ -354,6 +361,7 @@ export async function savePage(form: FormData) {
   await runAdminSave("/admin/homepage", async () => {
     await requirePermission("content.manage");
     const data = { slug, title: String(form.get("title")), body: String(form.get("body")) };
+    await rememberEntity("pages", slug, data);
     await prisma.sitePage.upsert({ where: { slug }, update: data, create: data });
   }, slug ? `/admin/homepage/page/${slug}` : "/admin/homepage/page/new");
 }

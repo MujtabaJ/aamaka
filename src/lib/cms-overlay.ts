@@ -5,6 +5,7 @@ import type { HomepageSection } from "@/lib/homepage";
 export type OverlayBag = Record<string, Record<string, unknown>>;
 
 export type CmsOverlay = {
+  updatedAt: number;
   heroes: OverlayBag;
   artists: OverlayBag;
   albums: OverlayBag;
@@ -14,10 +15,16 @@ export type CmsOverlay = {
   categories: OverlayBag;
   songs: OverlayBag;
   users: OverlayBag;
+  announcements: OverlayBag;
+  pages: OverlayBag;
+  faqs: OverlayBag;
+  plans: OverlayBag;
   sections?: HomepageSection[];
+  settings?: Record<string, unknown>;
 };
 
 const EMPTY: CmsOverlay = {
+  updatedAt: 0,
   heroes: {},
   artists: {},
   albums: {},
@@ -27,20 +34,32 @@ const EMPTY: CmsOverlay = {
   categories: {},
   songs: {},
   users: {},
+  announcements: {},
+  pages: {},
+  faqs: {},
+  plans: {},
 };
 
-const BLOB_PATH = "cms/overlay.json";
+const BLOB_PREFIX = "cms/state/";
 const MODEL_TO_BAG: Record<string, keyof CmsOverlay> = {
-  HomepageHero: "heroes",
-  Artist: "artists",
-  Album: "albums",
-  Book: "books",
-  Article: "articles",
-  Product: "products",
-  ProductCategory: "categories",
-  Song: "songs",
-  User: "users",
+  homepagehero: "heroes",
+  artist: "artists",
+  album: "albums",
+  book: "books",
+  article: "articles",
+  product: "products",
+  productcategory: "categories",
+  song: "songs",
+  user: "users",
+  announcement: "announcements",
+  sitepage: "pages",
+  faq: "faqs",
+  membershipplan: "plans",
 };
+
+function bagFor(model: string): keyof CmsOverlay | null {
+  return MODEL_TO_BAG[model.replace(/_/g, "").toLowerCase()] ?? null;
+}
 
 function localOverlayPath() {
   if (process.env.VERCEL) return "/tmp/aamaka-cms-overlay.json";
@@ -57,6 +76,7 @@ function asOverlay(value: unknown): CmsOverlay {
   if (!value || typeof value !== "object") return { ...EMPTY };
   const incoming = value as Partial<CmsOverlay>;
   return {
+    updatedAt: Number(incoming.updatedAt) || 0,
     heroes: incoming.heroes ?? {},
     artists: incoming.artists ?? {},
     albums: incoming.albums ?? {},
@@ -66,8 +86,19 @@ function asOverlay(value: unknown): CmsOverlay {
     categories: incoming.categories ?? {},
     songs: incoming.songs ?? {},
     users: incoming.users ?? {},
+    announcements: incoming.announcements ?? {},
+    pages: incoming.pages ?? {},
+    faqs: incoming.faqs ?? {},
+    plans: incoming.plans ?? {},
     sections: incoming.sections,
+    settings: incoming.settings,
   };
+}
+
+function newest(...candidates: Array<CmsOverlay | null>) {
+  return candidates
+    .filter((item): item is CmsOverlay => Boolean(item))
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0] ?? { ...EMPTY };
 }
 
 async function readLocal(): Promise<CmsOverlay | null> {
@@ -89,10 +120,12 @@ async function readBlob(): Promise<CmsOverlay | null> {
   if (!canUseBlob()) return null;
   try {
     const { list } = await import("@vercel/blob");
-    const { blobs } = await list({ prefix: BLOB_PATH, limit: 10 });
-    const item = blobs.find((blob) => blob.pathname === BLOB_PATH) ?? blobs[0];
-    if (!item) return null;
-    const response = await fetch(item.url, { cache: "no-store" });
+    const { blobs } = await list({ prefix: BLOB_PREFIX, limit: 20 });
+    const latest = [...blobs].sort((a, b) => +new Date(b.uploadedAt) - +new Date(a.uploadedAt))[0];
+    if (!latest) return null;
+    const response = await fetch(`${latest.url}${latest.url.includes("?") ? "&" : "?"}v=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!response.ok) return null;
     return asOverlay(await response.json());
   } catch {
@@ -103,10 +136,9 @@ async function readBlob(): Promise<CmsOverlay | null> {
 async function writeBlob(data: CmsOverlay) {
   if (!canUseBlob()) return;
   const { put } = await import("@vercel/blob");
-  await put(BLOB_PATH, JSON.stringify(data), {
+  await put(`${BLOB_PREFIX}${data.updatedAt}.json`, JSON.stringify(data), {
     access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
+    addRandomSuffix: true,
     contentType: "application/json",
     cacheControlMaxAge: 0,
   });
@@ -117,24 +149,29 @@ export function invalidateCmsOverlay() {
 }
 
 export async function loadCmsOverlay(): Promise<CmsOverlay> {
-  if (memory && Date.now() - memory.at < 2000) return memory.data;
-  const remote = await readBlob();
-  const local = remote ?? (await readLocal()) ?? { ...EMPTY };
-  memory = { data: local, at: Date.now() };
-  return local;
+  if (memory && Date.now() - memory.at < 1000) return memory.data;
+  const [remote, local] = await Promise.all([readBlob(), readLocal()]);
+  const data = newest(remote, local);
+  memory = { data, at: Date.now() };
+  return data;
 }
 
 export async function saveCmsOverlay(data: CmsOverlay) {
-  memory = { data, at: Date.now() };
-  await writeLocal(data);
+  const next = { ...data, updatedAt: Date.now() };
+  memory = { data: next, at: Date.now() };
+  await writeLocal(next);
   try {
-    await writeBlob(data);
+    await writeBlob(next);
   } catch {
-    /* local copy still keeps this instance consistent */
+    try {
+      await writeBlob(next);
+    } catch {
+      /* local copy still keeps this instance consistent */
+    }
   }
 }
 
-export async function rememberEntity(bag: keyof Omit<CmsOverlay, "sections">, id: string, fields: Record<string, unknown>) {
+export async function rememberEntity(bag: keyof Omit<CmsOverlay, "sections" | "settings" | "updatedAt">, id: string, fields: Record<string, unknown>) {
   if (!id) return;
   const current = await loadCmsOverlay();
   current[bag] = {
@@ -150,7 +187,13 @@ export async function rememberSections(sections: HomepageSection[]) {
   await saveCmsOverlay(current);
 }
 
-export async function forgetEntity(bag: keyof Omit<CmsOverlay, "sections">, id: string) {
+export async function rememberSettings(settings: Record<string, unknown>) {
+  const current = await loadCmsOverlay();
+  current.settings = { ...(current.settings ?? {}), ...settings };
+  await saveCmsOverlay(current);
+}
+
+export async function forgetEntity(bag: keyof Omit<CmsOverlay, "sections" | "settings" | "updatedAt">, id: string) {
   const current = await loadCmsOverlay();
   if (!current[bag][id]) return;
   const next = { ...current[bag] };
@@ -159,32 +202,51 @@ export async function forgetEntity(bag: keyof Omit<CmsOverlay, "sections">, id: 
   await saveCmsOverlay(current);
 }
 
+function mergeRow<T>(row: T, extra?: Record<string, unknown> | null): T {
+  if (!extra || !row || typeof row !== "object") return row;
+  return { ...row, ...extra } as T;
+}
+
+export function applyBag<T extends { id?: string; slug?: string }>(rows: T[], bag: OverlayBag): T[] {
+  return rows.map((row) => {
+    const extra = (row.id && bag[row.id]) || (row.slug && bag[row.slug]) || null;
+    return mergeRow(row, extra);
+  });
+}
+
 export async function hydrateRecord<T>(model: string, row: T): Promise<T> {
   if (!row || typeof row !== "object") return row;
   const overlay = await loadCmsOverlay();
-  if (model === "SiteSetting") {
+  if (model.toLowerCase() === "sitesetting") {
     const setting = row as { key?: string; value?: string };
     if (setting.key === "homepage" && overlay.sections) {
       return { ...row, value: JSON.stringify({ sections: overlay.sections }) };
     }
+    if (setting.key === "site" && overlay.settings) {
+      return { ...row, value: JSON.stringify(overlay.settings) };
+    }
     return row;
   }
-  const bagName = MODEL_TO_BAG[model];
-  if (!bagName || bagName === "sections") return row;
-  const id = "id" in row ? String((row as { id?: unknown }).id ?? "") : "";
-  const extra = id ? overlay[bagName][id] : null;
-  return extra ? { ...row, ...extra } : row;
+  const bagName = bagFor(model);
+  if (!bagName || bagName === "sections" || bagName === "settings" || bagName === "updatedAt") return row;
+  const record = row as { id?: unknown; slug?: unknown };
+  const extra = overlay[bagName][String(record.id ?? "")] || overlay[bagName][String(record.slug ?? "")];
+  return mergeRow(row, extra);
 }
 
 export async function hydrateRecords<T>(model: string, rows: T[]): Promise<T[]> {
   if (!Array.isArray(rows) || rows.length === 0) return rows;
+  if (model.toLowerCase() === "sitesetting") {
+    return Promise.all(rows.map((row) => hydrateRecord(model, row)));
+  }
   const overlay = await loadCmsOverlay();
-  const bagName = MODEL_TO_BAG[model];
-  if (!bagName || bagName === "sections") return rows;
+  const bagName = bagFor(model);
+  if (!bagName || bagName === "sections" || bagName === "settings" || bagName === "updatedAt") return rows;
   const bag = overlay[bagName];
   return rows.map((row) => {
-    if (!row || typeof row !== "object" || !("id" in row)) return row;
-    const extra = bag[String((row as { id: unknown }).id)];
-    return extra ? ({ ...row, ...extra } as T) : row;
+    if (!row || typeof row !== "object") return row;
+    const record = row as { id?: unknown; slug?: unknown };
+    const extra = bag[String(record.id ?? "")] || bag[String(record.slug ?? "")];
+    return mergeRow(row, extra);
   });
 }

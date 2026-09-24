@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { parseJson } from "@/lib/utils";
+import { loadCmsOverlay, rememberSettings } from "@/lib/cms-overlay";
 
 export type SocialLinks = {
   youtube?: string;
@@ -62,11 +63,14 @@ const defaults: SiteSettings = {
 
 export async function getSettings(): Promise<SiteSettings> {
   try {
+    const overlay = await loadCmsOverlay();
+    const overlaySite = overlay.settings as Partial<SiteSettings> | undefined;
     const rows = await prisma.siteSetting.findMany();
     const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     return {
       ...defaults,
       ...parseJson<Partial<SiteSettings>>(map.site ?? "{}", {}),
+      ...(overlaySite ?? {}),
       analytics: {
         ...defaults.analytics,
         gaMeasurementId:
@@ -80,9 +84,14 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function saveSettings(next: SiteSettings) {
-  await prisma.siteSetting.upsert({
-    where: { key: "site" },
-    update: { value: JSON.stringify(next) },
-    create: { key: "site", value: JSON.stringify(next) },
-  });
+  await rememberSettings(next as unknown as Record<string, unknown>);
+  try {
+    await prisma.siteSetting.upsert({
+      where: { key: "site" },
+      update: { value: JSON.stringify(next) },
+      create: { key: "site", value: JSON.stringify(next) },
+    });
+  } catch {
+    /* durable overlay already has the latest site text */
+  }
 }
