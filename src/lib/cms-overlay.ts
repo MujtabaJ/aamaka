@@ -19,9 +19,15 @@ export type CmsOverlay = {
   pages: OverlayBag;
   faqs: OverlayBag;
   plans: OverlayBag;
+  coupons: OverlayBag;
+  genres: OverlayBag;
+  reviews: OverlayBag;
+  deleted?: Record<string, string[]>;
   sections?: HomepageSection[];
   settings?: Record<string, unknown>;
 };
+
+export type EntityBag = keyof Omit<CmsOverlay, "sections" | "settings" | "updatedAt" | "deleted">;
 
 const EMPTY: CmsOverlay = {
   updatedAt: 0,
@@ -38,10 +44,13 @@ const EMPTY: CmsOverlay = {
   pages: {},
   faqs: {},
   plans: {},
+  coupons: {},
+  genres: {},
+  reviews: {},
 };
 
 const BLOB_PREFIX = "cms/state/";
-const MODEL_TO_BAG: Record<string, keyof CmsOverlay> = {
+const MODEL_TO_BAG: Record<string, EntityBag> = {
   homepagehero: "heroes",
   artist: "artists",
   album: "albums",
@@ -55,9 +64,30 @@ const MODEL_TO_BAG: Record<string, keyof CmsOverlay> = {
   sitepage: "pages",
   faq: "faqs",
   membershipplan: "plans",
+  coupon: "coupons",
+  genre: "genres",
+  review: "reviews",
 };
 
-function bagFor(model: string): keyof CmsOverlay | null {
+const INJECT_BAGS = new Set<EntityBag>([
+  "heroes",
+  "artists",
+  "albums",
+  "books",
+  "articles",
+  "products",
+  "categories",
+  "songs",
+  "announcements",
+  "pages",
+  "faqs",
+  "plans",
+  "coupons",
+  "genres",
+  "reviews",
+]);
+
+function bagFor(model: string): EntityBag | null {
   return MODEL_TO_BAG[model.replace(/_/g, "").toLowerCase()] ?? null;
 }
 
@@ -90,15 +120,21 @@ function asOverlay(value: unknown): CmsOverlay {
     pages: incoming.pages ?? {},
     faqs: incoming.faqs ?? {},
     plans: incoming.plans ?? {},
+    coupons: incoming.coupons ?? {},
+    genres: incoming.genres ?? {},
+    reviews: incoming.reviews ?? {},
+    deleted: incoming.deleted,
     sections: incoming.sections,
     settings: incoming.settings,
   };
 }
 
 function newest(...candidates: Array<CmsOverlay | null>) {
-  return candidates
-    .filter((item): item is CmsOverlay => Boolean(item))
-    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0] ?? { ...EMPTY };
+  return (
+    candidates
+      .filter((item): item is CmsOverlay => Boolean(item))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0] ?? { ...EMPTY }
+  );
 }
 
 async function readLocal(): Promise<CmsOverlay | null> {
@@ -171,14 +207,70 @@ export async function saveCmsOverlay(data: CmsOverlay) {
   }
 }
 
-export async function rememberEntity(bag: keyof Omit<CmsOverlay, "sections" | "settings" | "updatedAt">, id: string, fields: Record<string, unknown>) {
+function snapshot(fields: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    if (value instanceof Date) {
+      out[key] = value.toISOString();
+      continue;
+    }
+    if (typeof value === "bigint") {
+      out[key] = Number(value);
+      continue;
+    }
+    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      try {
+        JSON.stringify(value);
+        out[key] = value;
+      } catch {
+        /* skip circular relation objects */
+      }
+      continue;
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+export function newRecordId() {
+  return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export async function rememberEntity(bag: EntityBag, id: string, fields: Record<string, unknown>) {
   if (!id) return;
   const current = await loadCmsOverlay();
   current[bag] = {
     ...current[bag],
-    [id]: { ...(current[bag][id] ?? {}), ...fields, id },
+    [id]: { ...(current[bag][id] ?? {}), ...snapshot(fields), id },
   };
+  if (current.deleted?.[bag]) {
+    current.deleted = {
+      ...current.deleted,
+      [bag]: current.deleted[bag].filter((item) => item !== id),
+    };
+  }
   await saveCmsOverlay(current);
+}
+
+export async function persistEntity(
+  bag: EntityBag,
+  id: string,
+  fields: Record<string, unknown>,
+  write: (recordId: string) => Promise<{ id: string } | void>,
+) {
+  const recordId = id || newRecordId();
+  await rememberEntity(bag, recordId, { ...fields, id: recordId });
+  try {
+    const row = await write(recordId);
+    if (row?.id && row.id !== recordId) {
+      await rememberEntity(bag, row.id, { ...fields, id: row.id });
+      return row.id;
+    }
+  } catch {
+    /* overlay is the durable copy when the temporary database cannot keep the write */
+  }
+  return recordId;
 }
 
 export async function rememberSections(sections: HomepageSection[]) {
@@ -193,18 +285,90 @@ export async function rememberSettings(settings: Record<string, unknown>) {
   await saveCmsOverlay(current);
 }
 
-export async function forgetEntity(bag: keyof Omit<CmsOverlay, "sections" | "settings" | "updatedAt">, id: string) {
+export async function forgetEntity(bag: EntityBag, id: string) {
+  if (!id) return;
   const current = await loadCmsOverlay();
-  if (!current[bag][id]) return;
-  const next = { ...current[bag] };
-  delete next[id];
-  current[bag] = next;
+  if (current[bag][id]) {
+    const next = { ...current[bag] };
+    delete next[id];
+    current[bag] = next;
+  }
+  current.deleted = {
+    ...current.deleted,
+    [bag]: [...new Set([...(current.deleted?.[bag] ?? []), id])],
+  };
   await saveCmsOverlay(current);
 }
 
 function mergeRow<T>(row: T, extra?: Record<string, unknown> | null): T {
   if (!extra || !row || typeof row !== "object") return row;
   return { ...row, ...extra } as T;
+}
+
+function deletedIds(overlay: CmsOverlay, bag: EntityBag) {
+  return new Set(overlay.deleted?.[bag] ?? []);
+}
+
+function extraFor(overlay: CmsOverlay, bag: EntityBag, row: { id?: unknown; slug?: unknown; code?: unknown }) {
+  return (
+    overlay[bag][String(row.id ?? "")] ||
+    overlay[bag][String(row.slug ?? "")] ||
+    overlay[bag][String(row.code ?? "")] ||
+    null
+  );
+}
+
+function attachRelations<T>(row: T, overlay: CmsOverlay): T {
+  if (!row || typeof row !== "object") return row;
+  const record = { ...(row as Record<string, unknown>) };
+  if (typeof record.artistId === "string" && overlay.artists[record.artistId]) {
+    record.artist = { ...((record.artist as object) ?? {}), ...overlay.artists[record.artistId] };
+  }
+  if (typeof record.categoryId === "string" && overlay.categories[record.categoryId]) {
+    record.category = { ...((record.category as object) ?? {}), ...overlay.categories[record.categoryId] };
+  }
+  if (typeof record.genreId === "string" && overlay.genres[record.genreId]) {
+    record.genre = { ...((record.genre as object) ?? {}), ...overlay.genres[record.genreId] };
+  }
+  if (typeof record.albumId === "string" && overlay.albums[record.albumId]) {
+    record.album = { ...((record.album as object) ?? {}), ...overlay.albums[record.albumId] };
+  }
+  if (typeof record.productId === "string" && overlay.products[record.productId]) {
+    record.product = { ...((record.product as object) ?? {}), ...overlay.products[record.productId] };
+  }
+  return record as T;
+}
+
+function matchesWhere(row: Record<string, unknown>, where: unknown): boolean {
+  if (!where || typeof where !== "object") return true;
+  const clauses = where as Record<string, unknown>;
+  for (const [key, value] of Object.entries(clauses)) {
+    if (key === "AND" && Array.isArray(value)) {
+      if (!value.every((part) => matchesWhere(row, part))) return false;
+      continue;
+    }
+    if (key === "OR" && Array.isArray(value)) {
+      if (!value.some((part) => matchesWhere(row, part))) return false;
+      continue;
+    }
+    if (key === "NOT") {
+      if (matchesWhere(row, value)) return false;
+      continue;
+    }
+    const current = row[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const cond = value as Record<string, unknown>;
+      if ("in" in cond && Array.isArray(cond.in) && !cond.in.includes(current)) return false;
+      if ("not" in cond && current === cond.not) return false;
+      if ("contains" in cond && !String(current ?? "").toLowerCase().includes(String(cond.contains).toLowerCase())) {
+        return false;
+      }
+      if ("equals" in cond && current !== cond.equals) return false;
+      continue;
+    }
+    if (current !== undefined && current !== value) return false;
+  }
+  return true;
 }
 
 export function applyBag<T extends { id?: string; slug?: string }>(rows: T[], bag: OverlayBag): T[] {
@@ -214,39 +378,90 @@ export function applyBag<T extends { id?: string; slug?: string }>(rows: T[], ba
   });
 }
 
-export async function hydrateRecord<T>(model: string, row: T): Promise<T> {
-  if (!row || typeof row !== "object") return row;
-  const overlay = await loadCmsOverlay();
-  if (model.toLowerCase() === "sitesetting") {
-    const setting = row as { key?: string; value?: string };
-    if (setting.key === "homepage" && overlay.sections) {
-      return { ...row, value: JSON.stringify({ sections: overlay.sections }) };
+export async function hydrateRecord<T>(model: string, row: T, where?: unknown): Promise<T | null> {
+  if (row && typeof row === "object") {
+    const overlay = await loadCmsOverlay();
+    if (model.toLowerCase() === "sitesetting") {
+      const setting = row as { key?: string; value?: string };
+      if (setting.key === "homepage" && overlay.sections) {
+        return { ...row, value: JSON.stringify({ sections: overlay.sections }) };
+      }
+      if (setting.key === "site" && overlay.settings) {
+        let parsed: Record<string, unknown> = {};
+        try {
+          parsed = JSON.parse(setting.value || "{}") as Record<string, unknown>;
+        } catch {
+          parsed = {};
+        }
+        return { ...row, value: JSON.stringify({ ...parsed, ...overlay.settings }) };
+      }
+      return row;
     }
-    if (setting.key === "site" && overlay.settings) {
-      return { ...row, value: JSON.stringify(overlay.settings) };
-    }
-    return row;
+    const bagName = bagFor(model);
+    if (!bagName) return row;
+    const record = row as { id?: unknown; slug?: unknown; code?: unknown };
+    if (deletedIds(overlay, bagName).has(String(record.id ?? ""))) return null as T;
+    return attachRelations(mergeRow(row, extraFor(overlay, bagName, record)), overlay);
   }
-  const bagName = bagFor(model);
-  if (!bagName || bagName === "sections" || bagName === "settings" || bagName === "updatedAt") return row;
-  const record = row as { id?: unknown; slug?: unknown };
-  const extra = overlay[bagName][String(record.id ?? "")] || overlay[bagName][String(record.slug ?? "")];
-  return mergeRow(row, extra);
+  return lookupOverlayRecord<T>(model, where);
 }
 
-export async function hydrateRecords<T>(model: string, rows: T[]): Promise<T[]> {
-  if (!Array.isArray(rows) || rows.length === 0) return rows;
+export async function lookupOverlayRecord<T>(model: string, where?: unknown): Promise<T | null> {
+  const bagName = bagFor(model);
+  if (!bagName) return null;
+  const overlay = await loadCmsOverlay();
+  const bag = overlay[bagName];
+  const removed = deletedIds(overlay, bagName);
+  const clauses = where && typeof where === "object" ? (where as Record<string, unknown>) : {};
+  const direct =
+    (typeof clauses.id === "string" && bag[clauses.id]) ||
+    (typeof clauses.slug === "string" && (bag[clauses.slug] || Object.values(bag).find((item) => item.slug === clauses.slug))) ||
+    (typeof clauses.code === "string" && Object.values(bag).find((item) => item.code === clauses.code)) ||
+    null;
+  if (direct && !removed.has(String(direct.id ?? ""))) {
+    return attachRelations(direct as T, overlay);
+  }
+  const match = Object.values(bag).find(
+    (item) => !removed.has(String(item.id ?? "")) && matchesWhere(item, where),
+  );
+  return match ? attachRelations(match as T, overlay) : null;
+}
+
+export async function hydrateRecords<T>(model: string, rows: T[], where?: unknown): Promise<T[]> {
+  if (!Array.isArray(rows)) return rows;
   if (model.toLowerCase() === "sitesetting") {
-    return Promise.all(rows.map((row) => hydrateRecord(model, row)));
+    const next = await Promise.all(rows.map((row) => hydrateRecord(model, row)));
+    return next.filter((row) => row != null) as T[];
   }
   const overlay = await loadCmsOverlay();
   const bagName = bagFor(model);
-  if (!bagName || bagName === "sections" || bagName === "settings" || bagName === "updatedAt") return rows;
+  if (!bagName) return rows;
   const bag = overlay[bagName];
-  return rows.map((row) => {
-    if (!row || typeof row !== "object") return row;
-    const record = row as { id?: unknown; slug?: unknown };
-    const extra = bag[String(record.id ?? "")] || bag[String(record.slug ?? "")];
-    return mergeRow(row, extra);
-  });
+  const removed = deletedIds(overlay, bagName);
+  const seen = new Set<string>();
+  const merged = rows
+    .filter((row) => {
+      if (!row || typeof row !== "object") return true;
+      const record = row as { id?: unknown };
+      const id = String(record.id ?? "");
+      if (removed.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .map((row) => {
+      if (!row || typeof row !== "object") return row;
+      const record = row as { id?: unknown; slug?: unknown; code?: unknown };
+      return attachRelations(mergeRow(row, extraFor(overlay, bagName, record)), overlay);
+    });
+
+  if (!INJECT_BAGS.has(bagName)) return merged;
+
+  for (const extra of Object.values(bag)) {
+    const id = String(extra.id ?? "");
+    if (!id || seen.has(id) || removed.has(id)) continue;
+    if (!matchesWhere(extra, where)) continue;
+    merged.push(attachRelations(extra as T, overlay));
+    seen.add(id);
+  }
+  return merged;
 }

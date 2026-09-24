@@ -7,7 +7,7 @@ import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { savePrivateFile, validateUpload, ensureStorage } from "@/lib/media";
 import { imageFromForm, withCacheBust } from "@/lib/admin-images";
-import { rememberEntity } from "@/lib/cms-overlay";
+import { persistEntity, rememberEntity } from "@/lib/cms-overlay";
 import { runAdminSave } from "@/lib/admin-save";
 import { notify } from "@/lib/notifications";
 import { fulfillOrder } from "@/lib/orders";
@@ -127,12 +127,11 @@ export async function saveSong(form: FormData) {
     ...(fullVideoMediaId ? { fullVideoMediaId } : {}),
   };
 
-  const song = id
-    ? await prisma.song.update({ where: { id }, data })
-    : await prisma.song.create({ data });
+  const songId = await persistEntity("songs", id, data, async (recordId) =>
+    id ? prisma.song.update({ where: { id }, data }) : prisma.song.create({ data: { ...data, id: recordId } }),
+  );
 
-  await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: song.id });
-  await rememberEntity("songs", song.id, { coverUrl: data.coverUrl, title: data.title });
+  await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: songId });
   }, id ? `/admin/music/${id}` : "/admin/music/new");
 }
 
@@ -178,11 +177,14 @@ export async function saveProduct(form: FormData) {
     featured: form.get("featured") === "on",
     ...(nextImages.length ? { images: JSON.stringify(nextImages) } : {}),
   };
-  const product = id
-    ? await prisma.product.update({ where: { id }, data })
-    : await prisma.product.create({ data });
-  await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: product.id });
-  await rememberEntity("products", product.id, { images: nextImages.length ? JSON.stringify(nextImages) : existing?.images, name });
+  const stored = {
+    ...data,
+    images: nextImages.length ? JSON.stringify(nextImages) : existing?.images,
+  };
+  const productId = await persistEntity("products", id, stored, async (recordId) =>
+    id ? prisma.product.update({ where: { id }, data }) : prisma.product.create({ data: { ...data, id: recordId } }),
+  );
+  await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: productId });
   }, id ? `/admin/products/${id}` : "/admin/products/new");
 }
 
@@ -217,7 +219,12 @@ export async function deleteSong(form: FormData) {
   await runAdminSave("/admin/music", async () => {
     const user = await requirePermission("music.manage");
     const id = String(form.get("id"));
-    await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
+    await rememberEntity("songs", id, { published: false, accessType: "hidden" });
+    try {
+      await prisma.song.update({ where: { id }, data: { published: false, accessType: "hidden" } });
+    } catch {
+      /* overlay already hides the song */
+    }
     await audit({ userId: user.id, action: "unpublish", entity: "song", entityId: id });
   });
 }
@@ -226,7 +233,12 @@ export async function deleteProduct(form: FormData) {
   await runAdminSave("/admin/products", async () => {
     const user = await requirePermission("products.manage");
     const id = String(form.get("id"));
-    await prisma.product.update({ where: { id }, data: { status: "archived" } });
+    await rememberEntity("products", id, { status: "archived" });
+    try {
+      await prisma.product.update({ where: { id }, data: { status: "archived" } });
+    } catch {
+      /* overlay already archives the product */
+    }
     await audit({ userId: user.id, action: "archive", entity: "product", entityId: id });
   });
 }

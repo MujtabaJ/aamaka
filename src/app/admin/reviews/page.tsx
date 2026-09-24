@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { rememberEntity } from "@/lib/cms-overlay";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminReviewsPage() {
@@ -8,10 +9,14 @@ export default async function AdminReviewsPage() {
   async function moderate(form: FormData) {
     "use server";
     await requirePermission("reviews.manage");
-    await prisma.review.update({
-      where: { id: String(form.get("id")) },
-      data: { status: String(form.get("status")), featured: form.get("featured") === "on" },
-    });
+    const id = String(form.get("id"));
+    const data = { status: String(form.get("status")), featured: form.get("featured") === "on" };
+    await rememberEntity("reviews", id, data);
+    try {
+      await prisma.review.update({ where: { id }, data });
+    } catch {
+      /* overlay already keeps the review status */
+    }
     revalidatePath("/admin/reviews");
   }
   return (

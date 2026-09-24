@@ -51,16 +51,18 @@ function createPrisma() {
       $allModels: {
         async findMany({ model, args, query }) {
           const rows = await query(args);
-          return Array.isArray(rows) ? hydrateRecords(model, rows as object[]) : rows;
+          return Array.isArray(rows) ? hydrateRecords(model, rows as object[], args.where) : rows;
         },
         async findUnique({ model, args, query }) {
-          return hydrateRecord(model, await query(args));
+          return hydrateRecord(model, await query(args), args.where);
         },
         async findFirst({ model, args, query }) {
-          return hydrateRecord(model, await query(args));
+          return hydrateRecord(model, await query(args), args.where);
         },
         async findUniqueOrThrow({ model, args, query }) {
-          return hydrateRecord(model, await query(args));
+          const row = await hydrateRecord(model, await query(args), args.where);
+          if (row) return row;
+          throw new Error(`${model} not found`);
         },
       },
     },

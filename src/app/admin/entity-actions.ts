@@ -6,7 +6,7 @@ import { requirePermission } from "@/lib/session";
 import { toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { imageFromForm } from "@/lib/admin-images";
-import { forgetEntity, rememberEntity } from "@/lib/cms-overlay";
+import { forgetEntity, persistEntity, rememberEntity } from "@/lib/cms-overlay";
 import { getHomepageSections, saveHomepageSections, type HomepageSection, type HomepageSectionKey } from "@/lib/homepage";
 import { revalidatePath } from "next/cache";
 import { failSave, finishSave, isRedirectError, runAdminSave } from "@/lib/admin-save";
@@ -29,9 +29,9 @@ export async function saveArtist(form: FormData) {
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
-    if (id) await rememberEntity("artists", id, data);
-    const row = id ? await prisma.artist.update({ where: { id }, data }) : await prisma.artist.create({ data });
-    await rememberEntity("artists", row.id, data);
+    await persistEntity("artists", id, data, async (recordId) =>
+      id ? prisma.artist.update({ where: { id }, data }) : prisma.artist.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/artists/${id}` : "/admin/artists/new");
 }
 
@@ -40,8 +40,13 @@ export async function deleteArtist(form: FormData) {
     await requirePermission("music.manage");
     const id = String(form.get("id"));
     const artist = await prisma.artist.findUnique({ where: { id } });
+    await rememberEntity("artists", id, { published: false });
     if (artist) {
-      await prisma.artist.update({ where: { id }, data: { published: false } });
+      try {
+        await prisma.artist.update({ where: { id }, data: { published: false } });
+      } catch {
+        /* overlay already hides the artist */
+      }
       revalidatePath(`/music/artist/${artist.slug}`);
     }
   });
@@ -62,18 +67,24 @@ export async function saveAlbum(form: FormData) {
       pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
       published: form.get("published") === "on" || !id,
     };
-    if (id) await rememberEntity("albums", id, data);
-    const row = id
-      ? await prisma.album.update({ where: { id }, data })
-      : await prisma.album.create({ data: { ...data, accessType: "paid" } });
-    await rememberEntity("albums", row.id, data);
+    await persistEntity("albums", id, { ...data, accessType: existing?.accessType || "paid" }, async (recordId) =>
+      id
+        ? prisma.album.update({ where: { id }, data })
+        : prisma.album.create({ data: { ...data, accessType: "paid", id: recordId } }),
+    );
   }, id ? `/admin/albums/${id}` : "/admin/albums/new");
 }
 
 export async function deleteAlbum(form: FormData) {
   await runAdminSave("/admin/albums", async () => {
     await requirePermission("music.manage");
-    await prisma.album.update({ where: { id: String(form.get("id")) }, data: { published: false } });
+    const albumId = String(form.get("id"));
+    await rememberEntity("albums", albumId, { published: false });
+    try {
+      await prisma.album.update({ where: { id: albumId }, data: { published: false } });
+    } catch {
+      /* overlay already hides the album */
+    }
     revalidatePath("/admin/albums");
     revalidatePath("/albums");
   });
@@ -101,9 +112,9 @@ export async function saveBook(form: FormData) {
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
-    if (id) await rememberEntity("books", id, data);
-    const row = id ? await prisma.book.update({ where: { id }, data }) : await prisma.book.create({ data });
-    await rememberEntity("books", row.id, data);
+    await persistEntity("books", id, data, async (recordId) =>
+      id ? prisma.book.update({ where: { id }, data }) : prisma.book.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/books/${id}` : "/admin/books/new");
 }
 
@@ -111,9 +122,18 @@ export async function deleteBook(form: FormData) {
   await runAdminSave("/admin/books", async () => {
     await requirePermission("content.manage");
     const id = String(form.get("id"));
-    const used = await prisma.orderItem.count({ where: { bookId: id } });
-    if (used === 0) await prisma.book.delete({ where: { id } });
-    else await prisma.book.update({ where: { id }, data: { published: false } });
+    await rememberEntity("books", id, { published: false });
+    try {
+      const used = await prisma.orderItem.count({ where: { bookId: id } });
+      if (used === 0) {
+        await prisma.book.delete({ where: { id } });
+        await forgetEntity("books", id);
+      } else {
+        await prisma.book.update({ where: { id }, data: { published: false } });
+      }
+    } catch {
+      await forgetEntity("books", id);
+    }
     revalidatePath("/admin/books");
     revalidatePath("/books");
   });
@@ -133,24 +153,30 @@ export async function saveArticle(form: FormData) {
     coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl, "article"),
     published: form.get("published") === "on" || !id,
   };
-  const row = id
-    ? await prisma.article.update({ where: { id }, data })
-    : await prisma.article.create({
-        data: {
-          ...data,
-          authorId: user.id,
-          authorName: user.name ?? "AA Maka Production",
-          publishedAt: new Date(),
-        },
-      });
-  await rememberEntity("articles", row.id, data);
+  const extra = {
+    ...data,
+    authorId: user.id,
+    authorName: user.name ?? "AA Maka Production",
+    publishedAt: existing?.publishedAt ?? new Date(),
+  };
+  await persistEntity("articles", id, extra, async (recordId) =>
+    id
+      ? prisma.article.update({ where: { id }, data })
+      : prisma.article.create({ data: { ...extra, id: recordId } }),
+  );
   }, id ? `/admin/articles/${id}` : "/admin/articles/new");
 }
 
 export async function deleteArticle(form: FormData) {
   await runAdminSave("/admin/articles", async () => {
     await requirePermission("content.manage");
-    await prisma.article.delete({ where: { id: String(form.get("id")) } });
+    const articleId = String(form.get("id"));
+    await forgetEntity("articles", articleId);
+    try {
+      await prisma.article.delete({ where: { id: articleId } });
+    } catch {
+      /* overlay already removed the article */
+    }
     revalidatePath("/admin/articles");
     revalidatePath("/stories");
   });
@@ -166,16 +192,22 @@ export async function saveFaq(form: FormData) {
       sortOrder: Number(form.get("sortOrder") || 0),
       published: form.get("published") === "on" || !id,
     };
-    if (id) await rememberEntity("faqs", id, data);
-    const row = id ? await prisma.faq.update({ where: { id }, data }) : await prisma.faq.create({ data });
-    await rememberEntity("faqs", row.id, data);
+    await persistEntity("faqs", id, data, async (recordId) =>
+      id ? prisma.faq.update({ where: { id }, data }) : prisma.faq.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/faqs/${id}` : "/admin/faqs/new");
 }
 
 export async function deleteFaq(form: FormData) {
   await runAdminSave("/admin/faqs", async () => {
     await requirePermission("content.manage");
-    await prisma.faq.delete({ where: { id: String(form.get("id")) } });
+    const faqId = String(form.get("id"));
+    await forgetEntity("faqs", faqId);
+    try {
+      await prisma.faq.delete({ where: { id: faqId } });
+    } catch {
+      /* overlay already removed the FAQ */
+    }
   });
 }
 
@@ -193,17 +225,24 @@ export async function saveCategory(form: FormData) {
       parentId: String(form.get("parentId") || "") || null,
       published: form.get("published") === "on" || !id,
     };
-    const row = id
-      ? await prisma.productCategory.update({ where: { id }, data })
-      : await prisma.productCategory.create({ data });
-    await rememberEntity("categories", row.id, data);
+    await persistEntity("categories", id, data, async (recordId) =>
+      id
+        ? prisma.productCategory.update({ where: { id }, data })
+        : prisma.productCategory.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/categories/${id}` : "/admin/categories/new");
 }
 
 export async function deleteCategory(form: FormData) {
   await runAdminSave("/admin/categories", async () => {
     await requirePermission("products.manage");
-    await prisma.productCategory.update({ where: { id: String(form.get("id")) }, data: { published: false } });
+    const categoryId = String(form.get("id"));
+    await rememberEntity("categories", categoryId, { published: false });
+    try {
+      await prisma.productCategory.update({ where: { id: categoryId }, data: { published: false } });
+    } catch {
+      /* overlay already hides the category */
+    }
   });
 }
 
@@ -223,16 +262,24 @@ export async function savePlan(form: FormData) {
       features: JSON.stringify(String(form.get("features") || "").split("\n").filter(Boolean)),
       active: form.get("active") === "on" || !id,
     };
-    if (id) await rememberEntity("plans", id, data);
-    const row = id ? await prisma.membershipPlan.update({ where: { id }, data }) : await prisma.membershipPlan.create({ data });
-    await rememberEntity("plans", row.id, data);
+    await persistEntity("plans", id, data, async (recordId) =>
+      id
+        ? prisma.membershipPlan.update({ where: { id }, data })
+        : prisma.membershipPlan.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/memberships/${id}` : "/admin/memberships/new");
 }
 
 export async function deletePlan(form: FormData) {
   await runAdminSave("/admin/memberships", async () => {
     await requirePermission("memberships.manage");
-    await prisma.membershipPlan.update({ where: { id: String(form.get("id")) }, data: { active: false } });
+    const planId = String(form.get("id"));
+    await rememberEntity("plans", planId, { active: false });
+    try {
+      await prisma.membershipPlan.update({ where: { id: planId }, data: { active: false } });
+    } catch {
+      /* overlay already hides the plan */
+    }
   });
 }
 
@@ -278,9 +325,11 @@ export async function saveHero(form: FormData) {
       ctaQuaternaryHref: String(form.get("ctaQuaternaryHref") || "/shop"),
       active: form.get("active") === "on" || !id,
     };
-    if (id) await rememberEntity("heroes", id, data);
-    const row = id ? await prisma.homepageHero.update({ where: { id }, data }) : await prisma.homepageHero.create({ data });
-    await rememberEntity("heroes", row.id, data);
+    await persistEntity("heroes", id, data, async (recordId) =>
+      id
+        ? prisma.homepageHero.update({ where: { id }, data })
+        : prisma.homepageHero.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/homepage/hero/${id}` : "/admin/homepage/hero/new");
 }
 
@@ -343,16 +392,24 @@ export async function saveAnnouncement(form: FormData) {
       href: String(form.get("href") || "") || null,
       active: form.get("active") === "on" || !id,
     };
-    if (id) await rememberEntity("announcements", id, data);
-    const row = id ? await prisma.announcement.update({ where: { id }, data }) : await prisma.announcement.create({ data });
-    await rememberEntity("announcements", row.id, data);
+    await persistEntity("announcements", id, data, async (recordId) =>
+      id
+        ? prisma.announcement.update({ where: { id }, data })
+        : prisma.announcement.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/homepage/announcement/${id}` : "/admin/homepage/announcement/new");
 }
 
 export async function deleteAnnouncement(form: FormData) {
   await runAdminSave("/admin/homepage", async () => {
     await requirePermission("content.manage");
-    await prisma.announcement.delete({ where: { id: String(form.get("id")) } });
+    const announcementId = String(form.get("id"));
+    await forgetEntity("announcements", announcementId);
+    try {
+      await prisma.announcement.delete({ where: { id: announcementId } });
+    } catch {
+      /* overlay already removed the announcement */
+    }
   });
 }
 
@@ -361,15 +418,23 @@ export async function savePage(form: FormData) {
   await runAdminSave("/admin/homepage", async () => {
     await requirePermission("content.manage");
     const data = { slug, title: String(form.get("title")), body: String(form.get("body")) };
-    await rememberEntity("pages", slug, data);
-    await prisma.sitePage.upsert({ where: { slug }, update: data, create: data });
+    await persistEntity("pages", slug, data, async () => {
+      await prisma.sitePage.upsert({ where: { slug }, update: data, create: data });
+      return { id: slug };
+    });
   }, slug ? `/admin/homepage/page/${slug}` : "/admin/homepage/page/new");
 }
 
 export async function deletePage(form: FormData) {
   await runAdminSave("/admin/homepage", async () => {
     await requirePermission("content.manage");
-    await prisma.sitePage.delete({ where: { slug: String(form.get("slug")) } });
+    const slug = String(form.get("slug"));
+    await forgetEntity("pages", slug);
+    try {
+      await prisma.sitePage.delete({ where: { slug } });
+    } catch {
+      /* overlay already removed the page */
+    }
   });
 }
 
@@ -387,15 +452,22 @@ export async function saveCoupon(form: FormData) {
       usageLimit: form.get("usageLimit") ? Number(form.get("usageLimit")) : null,
       active: form.get("active") === "on" || !id,
     };
-    if (id) await prisma.coupon.update({ where: { id }, data });
-    else await prisma.coupon.create({ data });
+    await persistEntity("coupons", id, data, async (recordId) =>
+      id ? prisma.coupon.update({ where: { id }, data }) : prisma.coupon.create({ data: { ...data, id: recordId } }),
+    );
   }, id ? `/admin/coupons/${id}` : "/admin/coupons/new");
 }
 
 export async function deleteCoupon(form: FormData) {
   await runAdminSave("/admin/coupons", async () => {
     await requirePermission("coupons.manage");
-    await prisma.coupon.update({ where: { id: String(form.get("id")) }, data: { active: false } });
+    const couponId = String(form.get("id"));
+    await rememberEntity("coupons", couponId, { active: false });
+    try {
+      await prisma.coupon.update({ where: { id: couponId }, data: { active: false } });
+    } catch {
+      /* overlay already hides the coupon */
+    }
   });
 }
 
@@ -415,16 +487,24 @@ export async function saveUser(form: FormData) {
       ...(password ? { passwordHash: await bcrypt.hash(password, 12) } : {}),
     };
     if (!id && !password) throw new Error("Password is required");
-    const row = id
-      ? await prisma.user.update({ where: { id }, data })
-      : await prisma.user.create({ data: { ...data, passwordHash: await bcrypt.hash(password, 12) } });
-    await rememberEntity("users", row.id, { name: data.name, email: data.email, image: data.image, status: data.status });
+    const safe = { name: data.name, email: data.email, image: data.image, status: data.status, phone: data.phone, roleId: data.roleId };
+    await persistEntity("users", id, safe, async (recordId) =>
+      id
+        ? prisma.user.update({ where: { id }, data })
+        : prisma.user.create({ data: { ...data, passwordHash: await bcrypt.hash(password, 12), id: recordId } }),
+    );
   }, id ? `/admin/users/${id}` : "/admin/users/new");
 }
 
 export async function deleteUser(form: FormData) {
   await runAdminSave("/admin/users", async () => {
     await requirePermission("users.manage");
-    await prisma.user.update({ where: { id: String(form.get("id")) }, data: { status: "disabled" } });
+    const userId = String(form.get("id"));
+    await rememberEntity("users", userId, { status: "disabled" });
+    try {
+      await prisma.user.update({ where: { id: userId }, data: { status: "disabled" } });
+    } catch {
+      /* overlay already disables the user */
+    }
   });
 }
