@@ -17,6 +17,7 @@ storage/private/**
 uploads/**
 !uploads/.gitkeep
 .vercel
+data/cms-overlay.json
 next-env.d.ts
 tsconfig.tsbuildinfo
 .vercel

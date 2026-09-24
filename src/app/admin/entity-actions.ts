@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/session";
 import { toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
 import { imageFromForm } from "@/lib/admin-images";
+import { forgetEntity, rememberEntity } from "@/lib/cms-overlay";
 import { getHomepageSections, saveHomepageSections, type HomepageSection, type HomepageSectionKey } from "@/lib/homepage";
 import { revalidatePath } from "next/cache";
 import { failSave, finishSave, isRedirectError, runAdminSave } from "@/lib/admin-save";
@@ -16,8 +17,8 @@ export async function saveArtist(form: FormData) {
     await requirePermission("music.manage");
     const name = String(form.get("name"));
     const existing = id ? await prisma.artist.findUnique({ where: { id } }) : null;
-    const photoUrl = await imageFromForm(form, "photoFile", "photoUrl", existing?.photoUrl);
-    const coverUrl = await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl || photoUrl);
+    const photoUrl = await imageFromForm(form, "photoFile", "photoUrl", existing?.photoUrl, "artistPhoto");
+    const coverUrl = await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl || photoUrl, "artistCover");
     const data = {
       name,
       slug: existing?.slug || toSlug(name),
@@ -28,8 +29,8 @@ export async function saveArtist(form: FormData) {
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
-    if (id) await prisma.artist.update({ where: { id }, data });
-    else await prisma.artist.create({ data });
+    const row = id ? await prisma.artist.update({ where: { id }, data }) : await prisma.artist.create({ data });
+    await rememberEntity("artists", row.id, data);
   }, id ? `/admin/artists/${id}` : "/admin/artists/new");
 }
 
@@ -56,12 +57,14 @@ export async function saveAlbum(form: FormData) {
       slug: existing?.slug || toSlug(title),
       description: String(form.get("description") || ""),
       artistId: String(form.get("artistId") || "") || null,
-      coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl),
+      coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl, "album"),
       pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
       published: form.get("published") === "on" || !id,
     };
-    if (id) await prisma.album.update({ where: { id }, data });
-    else await prisma.album.create({ data: { ...data, accessType: "paid" } });
+    const row = id
+      ? await prisma.album.update({ where: { id }, data })
+      : await prisma.album.create({ data: { ...data, accessType: "paid" } });
+    await rememberEntity("albums", row.id, data);
   }, id ? `/admin/albums/${id}` : "/admin/albums/new");
 }
 
@@ -90,14 +93,14 @@ export async function saveBook(form: FormData) {
       language: String(form.get("language") || existing?.language || "Sindhi"),
       description: String(form.get("description") || ""),
       excerpt: String(form.get("excerpt") || "") || null,
-      coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl),
+      coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl, "book"),
       pricePaisa: rupeesToPaisa(Number(form.get("price") || 0)),
       stock: Number(form.get("stock") || 0),
       featured: form.get("featured") === "on",
       published: form.get("published") === "on" || !id,
     };
-    if (id) await prisma.book.update({ where: { id }, data });
-    else await prisma.book.create({ data });
+    const row = id ? await prisma.book.update({ where: { id }, data }) : await prisma.book.create({ data });
+    await rememberEntity("books", row.id, data);
   }, id ? `/admin/books/${id}` : "/admin/books/new");
 }
 
@@ -124,20 +127,20 @@ export async function saveArticle(form: FormData) {
     slug: existing?.slug || toSlug(title),
     excerpt: String(form.get("excerpt") || ""),
     body: String(form.get("body") || ""),
-    coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl),
+    coverUrl: await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl, "article"),
     published: form.get("published") === "on" || !id,
   };
-  if (id) await prisma.article.update({ where: { id }, data });
-  else {
-    await prisma.article.create({
-      data: {
-        ...data,
-        authorId: user.id,
-        authorName: user.name ?? "AA Maka Production",
-        publishedAt: new Date(),
-      },
-    });
-  }
+  const row = id
+    ? await prisma.article.update({ where: { id }, data })
+    : await prisma.article.create({
+        data: {
+          ...data,
+          authorId: user.id,
+          authorName: user.name ?? "AA Maka Production",
+          publishedAt: new Date(),
+        },
+      });
+  await rememberEntity("articles", row.id, data);
   }, id ? `/admin/articles/${id}` : "/admin/articles/new");
 }
 
@@ -182,12 +185,14 @@ export async function saveCategory(form: FormData) {
       name,
       slug: existing?.slug || toSlug(name),
       description: String(form.get("description") || "") || null,
-      imageUrl: await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl),
+      imageUrl: await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl, "category"),
       parentId: String(form.get("parentId") || "") || null,
       published: form.get("published") === "on" || !id,
     };
-    if (id) await prisma.productCategory.update({ where: { id }, data });
-    else await prisma.productCategory.create({ data });
+    const row = id
+      ? await prisma.productCategory.update({ where: { id }, data })
+      : await prisma.productCategory.create({ data });
+    await rememberEntity("categories", row.id, data);
   }, id ? `/admin/categories/${id}` : "/admin/categories/new");
 }
 
@@ -238,7 +243,7 @@ export async function saveHomepageSection(form: FormData) {
       eyebrow: String(form.get("eyebrow") || ""),
       title: String(form.get("title") || ""),
       subtitle: String(form.get("subtitle") || ""),
-      imageUrl: (await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl)) || "",
+      imageUrl: (await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl, "section")) || "",
       ctaLabel: String(form.get("ctaLabel") || ""),
       ctaHref: String(form.get("ctaHref") || ""),
       visible: form.get("visible") === "on",
@@ -257,7 +262,7 @@ export async function saveHero(form: FormData) {
       kicker: String(form.get("kicker") || ""),
       title: String(form.get("title") || ""),
       subtitle: String(form.get("subtitle") || ""),
-      imageUrl: (await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl)) || "/media/covers/hero.svg",
+      imageUrl: (await imageFromForm(form, "photoFile", "photoUrl", existing?.imageUrl, "hero")) || "/media/covers/hero.svg",
       ctaPrimaryLabel: String(form.get("ctaPrimaryLabel") || "Listen Now"),
       ctaPrimaryHref: String(form.get("ctaPrimaryHref") || "/music"),
       ctaSecondaryLabel: String(form.get("ctaSecondaryLabel") || "Explore Music"),
@@ -268,15 +273,17 @@ export async function saveHero(form: FormData) {
       ctaQuaternaryHref: String(form.get("ctaQuaternaryHref") || "/shop"),
       active: form.get("active") === "on" || !id,
     };
-    if (id) await prisma.homepageHero.update({ where: { id }, data });
-    else await prisma.homepageHero.create({ data });
+    const row = id ? await prisma.homepageHero.update({ where: { id }, data }) : await prisma.homepageHero.create({ data });
+    await rememberEntity("heroes", row.id, data);
   }, id ? `/admin/homepage/hero/${id}` : "/admin/homepage/hero/new");
 }
 
 export async function deleteHero(form: FormData) {
   await runAdminSave("/admin/homepage", async () => {
     await requirePermission("content.manage");
-    await prisma.homepageHero.delete({ where: { id: String(form.get("id")) } });
+    const heroId = String(form.get("id"));
+    await prisma.homepageHero.delete({ where: { id: heroId } });
+    await forgetEntity("heroes", heroId);
   });
 }
 
@@ -396,14 +403,14 @@ export async function saveUser(form: FormData) {
       roleId: String(form.get("roleId")),
       status: String(form.get("status") || "active"),
       phone: String(form.get("phone") || "") || null,
-      image: await imageFromForm(form, "photoFile", "photoUrl", existing?.image),
+      image: await imageFromForm(form, "photoFile", "photoUrl", existing?.image, "avatar"),
       ...(password ? { passwordHash: await bcrypt.hash(password, 12) } : {}),
     };
-    if (id) await prisma.user.update({ where: { id }, data });
-    else {
-      if (!password) throw new Error("Password is required");
-      await prisma.user.create({ data: { ...data, passwordHash: await bcrypt.hash(password, 12) } });
-    }
+    if (!id && !password) throw new Error("Password is required");
+    const row = id
+      ? await prisma.user.update({ where: { id }, data })
+      : await prisma.user.create({ data: { ...data, passwordHash: await bcrypt.hash(password, 12) } });
+    await rememberEntity("users", row.id, { name: data.name, email: data.email, image: data.image, status: data.status });
   }, id ? `/admin/users/${id}` : "/admin/users/new");
 }
 

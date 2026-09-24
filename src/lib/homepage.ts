@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { parseJson } from "@/lib/utils";
 import { photos } from "@/lib/photos";
+import { loadCmsOverlay, rememberSections } from "@/lib/cms-overlay";
 
 export type HomepageSectionKey =
   | "music"
@@ -193,6 +194,8 @@ function mergeSections(saved: HomepageSection[] | undefined): HomepageSection[] 
 
 export async function getHomepageSections(): Promise<HomepageSection[]> {
   try {
+    const overlay = await loadCmsOverlay();
+    if (overlay.sections?.length) return mergeSections(overlay.sections);
     const row = await prisma.siteSetting.findUnique({ where: { key: "homepage" } });
     const parsed = parseJson<{ sections?: HomepageSection[] }>(row?.value, {});
     return mergeSections(parsed.sections);
@@ -207,9 +210,14 @@ export async function getHomepageSection(id: string) {
 }
 
 export async function saveHomepageSections(sections: HomepageSection[]) {
-  await prisma.siteSetting.upsert({
-    where: { key: "homepage" },
-    update: { value: JSON.stringify({ sections }) },
-    create: { key: "homepage", value: JSON.stringify({ sections }) },
-  });
+  await rememberSections(sections);
+  try {
+    await prisma.siteSetting.upsert({
+      where: { key: "homepage" },
+      update: { value: JSON.stringify({ sections }) },
+      create: { key: "homepage", value: JSON.stringify({ sections }) },
+    });
+  } catch {
+    /* durable overlay already has the latest homepage pictures */
+  }
 }

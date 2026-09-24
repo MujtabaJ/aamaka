@@ -12,10 +12,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "*.blob.vercel-storage.com" },
     ],
     formats: ["image/avif", "image/webp"],
   },
-  serverExternalPackages: ["bcryptjs", "@prisma/client"],
+  serverExternalPackages: ["bcryptjs", "@prisma/client", "sharp"],
   outputFileTracingRoot: path.join(__dirname),
   outputFileTracingIncludes: {
     "*": ["./prisma/seeded.db"],

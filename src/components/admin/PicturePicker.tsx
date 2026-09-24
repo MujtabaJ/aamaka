@@ -43,8 +43,10 @@ export function PicturePicker({
   spec?: ImageSpecKey;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(current || "");
   const [chosen, setChosen] = useState("");
+  const [busy, setBusy] = useState(false);
   const [currentSize, setCurrentSize] = useState<string | null>(null);
   const guide = IMAGE_SPECS[spec];
 
@@ -86,14 +88,20 @@ export function PicturePicker({
           const input = event.target;
           const file = input.files?.[0];
           if (!file) return;
+          setBusy(true);
           try {
             const fitted = await fitImage(file, guide.width, guide.height);
             assignFile(input, fitted);
             setChosen(fitted.name);
             setPreview(URL.createObjectURL(fitted));
+            if (urlRef.current) urlRef.current.value = "";
           } catch {
+            assignFile(input, file);
             setChosen(file.name);
             setPreview(URL.createObjectURL(file));
+            if (urlRef.current) urlRef.current.value = "";
+          } finally {
+            setBusy(false);
           }
         }}
       />
@@ -104,10 +112,12 @@ export function PicturePicker({
       >
         Change picture
       </button>
+      {busy ? <p className="text-xs text-ink/60">Resizing picture…</p> : null}
       {chosen ? <p className="text-xs text-ink/60">Selected: {chosen}</p> : null}
       <label className="block space-y-1.5 text-sm">
         <span className="text-ink/70">Or paste an image URL</span>
         <input
+          ref={urlRef}
           name={urlName}
           defaultValue={current ?? ""}
           placeholder="https://"

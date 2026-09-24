@@ -5,8 +5,9 @@ import { requirePermission } from "@/lib/session";
 import { audit } from "@/lib/audit";
 import { parseJson, toSlug } from "@/lib/utils";
 import { rupeesToPaisa } from "@/lib/money";
-import { savePrivateFile, savePublicFile, validateUpload, ensureStorage } from "@/lib/media";
+import { savePrivateFile, validateUpload, ensureStorage } from "@/lib/media";
 import { imageFromForm, withCacheBust } from "@/lib/admin-images";
+import { rememberEntity } from "@/lib/cms-overlay";
 import { runAdminSave } from "@/lib/admin-save";
 import { notify } from "@/lib/notifications";
 import { fulfillOrder } from "@/lib/orders";
@@ -39,8 +40,9 @@ export async function saveSong(form: FormData) {
   let fullVideoMediaId: string | undefined;
 
   if (cover) {
-    validateUpload("image", cover.file.type, cover.file.size);
-    coverUrl = withCacheBust(await savePublicFile("covers", cover.file.name, cover.buffer));
+    const extra = new FormData();
+    extra.set("coverFile", cover.file);
+    coverUrl = (await imageFromForm(extra, "coverFile", "coverUrl", null, "song")) || undefined;
   }
   if (preview) {
     validateUpload("audio", preview.file.type, preview.file.size);
@@ -118,7 +120,7 @@ export async function saveSong(form: FormData) {
     seoDescription: String(form.get("seoDescription") || "") || null,
     coverUrl:
       coverUrl ||
-      (await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl)) ||
+      (await imageFromForm(form, "coverFile", "coverUrl", existing?.coverUrl, "song")) ||
       undefined,
     ...(previewMediaId ? { previewMediaId } : {}),
     ...(fullAudioMediaId ? { fullAudioMediaId } : {}),
@@ -130,6 +132,7 @@ export async function saveSong(form: FormData) {
     : await prisma.song.create({ data });
 
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "song", entityId: song.id });
+  await rememberEntity("songs", song.id, { coverUrl: data.coverUrl, title: data.title });
   }, id ? `/admin/music/${id}` : "/admin/music/new");
 }
 
@@ -142,14 +145,14 @@ export async function saveProduct(form: FormData) {
   const images = [] as string[];
   for (const [key, value] of form.entries()) {
     if (key === "images" && value instanceof File && value.size) {
-      validateUpload("image", value.type, value.size);
-      images.push(
-        withCacheBust(await savePublicFile("products", value.name, Buffer.from(await value.arrayBuffer()))),
-      );
+      const extra = new FormData();
+      extra.set("photoFile", value);
+      const url = await imageFromForm(extra, "photoFile", "photoUrl", null, "product");
+      if (url) images.push(url);
     }
   }
   const currentImages = parseJson<string[]>(existing?.images, []);
-  const mainImage = await imageFromForm(form, "photoFile", "photoUrl", currentImages[0]);
+  const mainImage = await imageFromForm(form, "photoFile", "photoUrl", currentImages[0], "product");
   const extraUrls = String(form.get("imageUrls") || "")
     .split("\n")
     .map((s) => s.trim())
@@ -179,6 +182,7 @@ export async function saveProduct(form: FormData) {
     ? await prisma.product.update({ where: { id }, data })
     : await prisma.product.create({ data });
   await audit({ userId: user.id, action: id ? "update" : "create", entity: "product", entityId: product.id });
+  await rememberEntity("products", product.id, { images: nextImages.length ? JSON.stringify(nextImages) : existing?.images, name });
   }, id ? `/admin/products/${id}` : "/admin/products/new");
 }
 

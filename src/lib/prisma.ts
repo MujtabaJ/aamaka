@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { hydrateRecord, hydrateRecords } from "@/lib/cms-overlay";
 
 function copyWritable(src: string, dest: string) {
   fs.writeFileSync(dest, fs.readFileSync(src));
@@ -38,13 +39,34 @@ function serverlessDatabaseUrl() {
 const databaseUrl = serverlessDatabaseUrl();
 if (databaseUrl) process.env.DATABASE_URL = databaseUrl;
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createPrisma> };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrisma() {
+  const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
   });
+  return client.$extends({
+    query: {
+      $allModels: {
+        async findMany({ model, args, query }) {
+          const rows = await query(args);
+          return Array.isArray(rows) ? hydrateRecords(model, rows as object[]) : rows;
+        },
+        async findUnique({ model, args, query }) {
+          return hydrateRecord(model, await query(args));
+        },
+        async findFirst({ model, args, query }) {
+          return hydrateRecord(model, await query(args));
+        },
+        async findUniqueOrThrow({ model, args, query }) {
+          return hydrateRecord(model, await query(args));
+        },
+      },
+    },
+  });
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrisma();
 
 globalForPrisma.prisma = prisma;
